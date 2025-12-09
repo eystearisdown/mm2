@@ -1,0 +1,124 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Anti-AFK
+player.Idled:Connect(function()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+end)
+
+local joinTime = tick()
+local fpsTime = tick()
+local fpsCount = 0
+local fps = 0
+
+-- ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "Nevoirs"
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 2147483647
+gui.Parent = playerGui
+
+-- Dim
+local dim = Instance.new("Frame")
+dim.Size = UDim2.new(1,0,1,0)
+dim.BackgroundColor3 = Color3.new(0,0,0)
+dim.BackgroundTransparency = 0.6
+dim.ZIndex = 1
+dim.Parent = gui
+
+-- Panel trans (THU NHỎ)
+local panel = Instance.new("Frame")
+panel.Size = UDim2.new(0.35,0,0.4,0)          -- nhỏ hơn 0.5 x 0.6
+panel.Position = UDim2.new(0.325,0,0.3,0)     -- vẫn gần giữa
+panel.BackgroundColor3 = Color3.new(0,0,0)
+panel.BackgroundTransparency = 0.3
+panel.ZIndex = 3
+panel.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,20)
+corner.Parent = panel
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255,215,0)  -- Gold glow
+stroke.Thickness = 4
+stroke.Transparency = 0.2
+stroke.Parent = panel
+
+-- Title NEVOIRS
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0.9,0,0.25,0)          -- cao hơn chút vì không còn logo
+title.Position = UDim2.new(0.05,0,0.05,0)
+title.BackgroundTransparency = 1
+title.Text = "NEVOIRS"
+title.TextColor3 = Color3.fromRGB(255,255,0)
+title.Font = Enum.Font.FredokaOne
+title.TextScaled = true
+title.ZIndex = 5
+title.Parent = panel
+
+local titleStroke = Instance.new("UIStroke")
+titleStroke.Color = Color3.fromRGB(255,255,0)
+titleStroke.Thickness = 2.5
+titleStroke.Transparency = 0.3
+titleStroke.Parent = title
+
+-- KHÔNG CÒN LOGO: xoá toàn bộ logoFrame / ImageLabel
+
+-- Stats texts (giữ nguyên logic, chỉnh lại vị trí cho hợp panel nhỏ)
+local stats = {"FPS : ", "PING : ", "Uptime : "}
+local statLabels = {}
+local statPositions = {0.45, 0.62, 0.79}  -- đẩy lên chút vì panel thấp hơn
+
+for i, text in ipairs(stats) do
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.9,0,0.1,0)
+    label.Position = UDim2.new(0.05,0,statPositions[i],0)
+    label.BackgroundTransparency = 1
+    label.Text = text .. "XX"
+    label.TextColor3 = Color3.fromRGB(255,255,0)
+    label.Font = Enum.Font.FredokaOne
+    label.TextScaled = true
+    label.ZIndex = 5
+    label.Parent = panel
+    statLabels[text] = label
+    
+    local sStroke = Instance.new("UIStroke")
+    sStroke.Color = Color3.fromRGB(255,255,0)
+    sStroke.Thickness = 1.5
+    sStroke.Transparency = 0.4
+    sStroke.Parent = label
+end
+
+local uptimeLabel = statLabels["Uptime : "]
+local pingLabel = statLabels["PING : "]
+local fpsLabel = statLabels["FPS : "]
+
+-- Update
+RunService.Heartbeat:Connect(function()
+    local now = tick()
+    
+    -- Uptime
+    local elapsed = now - joinTime
+    local h = math.floor(elapsed / 3600)
+    local m = math.floor((elapsed % 3600) / 60)
+    local s = math.floor(elapsed % 60)
+    uptimeLabel.Text = "Uptime : " .. string.format("%02d:%02d:%02d", h, m, s)
+    
+    -- FPS average
+    fpsCount = fpsCount + 1
+    if now - fpsTime >= 1 then
+        fps = fpsCount
+        fpsCount = 0
+        fpsTime = now
+    end
+    fpsLabel.Text = "FPS : " .. fps
+    
+    -- Ping
+    pingLabel.Text = "PING : " .. math.floor(player:GetNetworkPing() * 1000) .. " ms"
+end)
+
+print("Nevoirs UI (no logo) + Anti-AFK loaded!")
