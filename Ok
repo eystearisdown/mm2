@@ -98,12 +98,3 @@ if toggleAntiAfk then
         print("Nevoirs iu iem")
     end)
 end
------------------------------------------------------------
--- 👾 DELETE MAP
------------------------------------------------------------
-if toggleAntiAfk then
-    task.spawn(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/Deletemap"))();
-        print("Nevoirs - Delete")
-    end)
-end
