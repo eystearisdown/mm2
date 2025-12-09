@@ -4,7 +4,6 @@ local togglePhoneMode        = (_G.togglePhoneMode ~= nil) and _G.togglePhoneMod
 local toggleRejoinIfLoading  = (_G.toggleRejoinIfLoading ~= nil) and _G.toggleRejoinIfLoading or false
 local toggleRejoinOnError    = (_G.toggleRejoinOnError ~= nil) and _G.toggleRejoinOnError or false
 local toggleAntiAfk          = (_G.toggleAntiAfk ~= nil) and _G.toggleAntiAfk or false
-local toggleDelete          = (_G.toggleDelete ~= nil) and _G.toggleDelete or false
 -- =========================
 
 
