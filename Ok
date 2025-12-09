@@ -4,6 +4,7 @@ local togglePhoneMode        = (_G.togglePhoneMode ~= nil) and _G.togglePhoneMod
 local toggleRejoinIfLoading  = (_G.toggleRejoinIfLoading ~= nil) and _G.toggleRejoinIfLoading or false
 local toggleRejoinOnError    = (_G.toggleRejoinOnError ~= nil) and _G.toggleRejoinOnError or false
 local toggleAntiAfk          = (_G.toggleAntiAfk ~= nil) and _G.toggleAntiAfk or false
+local toggleDelete          = (_G.toggleDelete ~= nil) and _G.toggleDelete or false
 -- =========================
 
 
@@ -90,11 +91,20 @@ if toggleRejoinOnError then
 end
 
 -----------------------------------------------------------
--- 💤 ANTI AFK (HassanXZayn Script)
+-- 💤 ANTI AFK 
 -----------------------------------------------------------
 if toggleAntiAfk then
     task.spawn(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))();
-        print("[AntiAFK] HassanXZayn script loaded.")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/Antiafk"))();
+        print("Nevoirs iu iem")
+    end)
+end
+-----------------------------------------------------------
+-- 👾 DELETE MAP
+-----------------------------------------------------------
+if toggleDelete then
+    task.spawn(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/Deletemap"))();
+        print("Nevoirs - Delete")
     end)
 end
