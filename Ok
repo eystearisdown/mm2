@@ -94,7 +94,7 @@ end
 -----------------------------------------------------------
 if toggleAntiAfk then
     task.spawn(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/Antiafk"))();
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))();
         print("Nevoirs iu iem")
     end)
 end
