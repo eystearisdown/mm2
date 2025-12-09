@@ -98,4 +98,3 @@ if toggleAntiAfk then
         print("Nevoirs iu iem")
     end)
 end
-endend
