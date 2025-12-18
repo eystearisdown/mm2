@@ -1,0 +1,113 @@
+-- ==== CONFIG SECTION ====
+local toggleTabletMode       = (_G.toggleTabletMode ~= nil) and _G.toggleTabletMode or false
+local togglePhoneMode        = (_G.togglePhoneMode ~= nil) and _G.togglePhoneMode or false
+local toggleRejoinIfLoading  = (_G.toggleRejoinIfLoading ~= nil) and _G.toggleRejoinIfLoading or false
+local toggleRejoinOnError    = (_G.toggleRejoinOnError ~= nil) and _G.toggleRejoinOnError or false
+local toggleKaitun           = (_G.toggleKaitun ~= nil) and _G.toggleKaitun or false
+-- =========================
+
+
+-- SERVICES
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local GuiService = game:GetService("GuiService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-----------------------------------------------------------
+-- 📱 AUTO PHONE MODE
+-----------------------------------------------------------
+if togglePhoneMode then
+    task.spawn(function()
+        while task.wait(0.2) do
+            local deviceSelect = playerGui:FindFirstChild("DeviceSelect")
+            if deviceSelect and deviceSelect.Enabled then
+                local container = deviceSelect:FindFirstChild("Container")
+                local phone = container and container:FindFirstChild("Phone")
+                local button = phone and phone:FindFirstChild("Button")
+                if button and button.Visible then
+                    firesignal(button.MouseButton1Click)
+                end
+            end
+        end
+    end)
+end
+
+-----------------------------------------------------------
+-- 💻 AUTO TABLET MODE
+-----------------------------------------------------------
+if toggleTabletMode then
+    task.spawn(function()
+        while task.wait(0.2) do
+            local deviceSelect = playerGui:FindFirstChild("DeviceSelect")
+            if deviceSelect and deviceSelect.Enabled then
+                local container = deviceSelect:FindFirstChild("Container")
+                local tablet = container and container:FindFirstChild("Tablet")
+                local button = tablet and tablet:FindFirstChild("Button")
+                if button and button.Visible then
+                    firesignal(button.MouseButton1Click)
+                end
+            end
+        end
+    end)
+end
+
+-----------------------------------------------------------
+-- 🔁 AUTO REJOIN IF LOADING STUCK
+-----------------------------------------------------------
+if toggleRejoinIfLoading then
+    task.spawn(function()
+        local loadingGui = playerGui:WaitForChild("Loading", 10)
+        if not loadingGui then return end
+
+        local removed = false
+        loadingGui.AncestryChanged:Connect(function()
+            if not loadingGui:IsDescendantOf(game) then
+                removed = true
+            end
+        end)
+
+        task.delay(60, function()
+            if not removed then
+                warn("[AutoRejoin] Loading stuck. Rejoining...")
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+            end
+        end)
+    end)
+end
+
+-----------------------------------------------------------
+-- ⚠️ AUTO REJOIN ON ERROR MESSAGE
+-----------------------------------------------------------
+if toggleRejoinOnError then
+    GuiService.ErrorMessageChanged:Connect(function(errorMessage)
+        if errorMessage and errorMessage ~= "" then
+            warn("[AutoRejoin] Error detected: " .. errorMessage)
+            TeleportService:Teleport(game.PlaceId, player)
+        end
+    end)
+end
+
+-----------------------------------------------------------
+-- 🚀 KAITUN LOADER (DELAY 10s)
+-----------------------------------------------------------
+if toggleKaitun then
+    task.spawn(function()
+        if not game:IsLoaded() then
+            game.Loaded:Wait()
+        end
+
+        task.wait(10)
+
+        script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
+        getgenv().Config = {
+            HUDHopMinGain = 35,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes) 
+            FPSCap     = 10,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
+            Mode       = "battlepass",                     -- "battlepass" or "crate"
+            Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",                    -- Crate notify
+            DiscordID  = "882156430797459456"              -- Crate notify (need metion)
+        }
+        loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
+    end)
+end
