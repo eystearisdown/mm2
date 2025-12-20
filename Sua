@@ -1,24 +1,19 @@
--- ================== CONFIG ==================
+-- ==== CONFIG SECTION ====
 local toggleTabletMode       = (_G.toggleTabletMode ~= nil) and _G.toggleTabletMode or false
 local togglePhoneMode        = (_G.togglePhoneMode ~= nil) and _G.togglePhoneMode or false
 local toggleRejoinIfLoading  = (_G.toggleRejoinIfLoading ~= nil) and _G.toggleRejoinIfLoading or false
 local toggleRejoinOnError    = (_G.toggleRejoinOnError ~= nil) and _G.toggleRejoinOnError or false
 local toggleKaitun           = (_G.toggleKaitun ~= nil) and _G.toggleKaitun or false
--- ============================================
+-- =========================
 
--- ================== SERVICES =================
+
+-- SERVICES
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local GuiService = game:GetService("GuiService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
--- ================== KAITUN STATE =================
-_G.__KAITUN_STATE__ = _G.__KAITUN_STATE__ or "idle"
--- idle | loading | loaded
--- ================================================
-
 
 -----------------------------------------------------------
 -- 📱 AUTO PHONE MODE
@@ -39,7 +34,6 @@ if togglePhoneMode then
     end)
 end
 
-
 -----------------------------------------------------------
 -- 💻 AUTO TABLET MODE
 -----------------------------------------------------------
@@ -59,13 +53,12 @@ if toggleTabletMode then
     end)
 end
 
-
 -----------------------------------------------------------
--- 🔁 AUTO REJOIN IF LOADING STUCK (SAFE)
+-- 🔁 AUTO REJOIN IF LOADING STUCK
 -----------------------------------------------------------
 if toggleRejoinIfLoading then
     task.spawn(function()
-        local loadingGui = playerGui:WaitForChild("Loading", 15)
+        local loadingGui = playerGui:WaitForChild("Loading", 10)
         if not loadingGui then return end
 
         local removed = false
@@ -76,75 +69,54 @@ if toggleRejoinIfLoading then
         end)
 
         task.delay(60, function()
-            if removed then return end
-            if _G.__KAITUN_STATE__ == "loading" then return end
-
-            warn("[AutoRejoin] Loading stuck. Rejoining...")
-            TeleportService:TeleportToPlaceInstance(
-                game.PlaceId,
-                game.JobId,
-                player
-            )
+            if not removed then
+                warn("[AutoRejoin] Loading stuck. Rejoining...")
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+            end
         end)
     end)
 end
 
-
 -----------------------------------------------------------
--- ⚠️ AUTO REJOIN ON ERROR MESSAGE (SAFE)
+-- ⚠️ AUTO REJOIN ON ERROR MESSAGE
 -----------------------------------------------------------
 if toggleRejoinOnError then
     GuiService.ErrorMessageChanged:Connect(function(errorMessage)
-        if not errorMessage or errorMessage == "" then return end
-        if _G.__KAITUN_STATE__ == "loading" then return end
-
-        warn("[AutoRejoin] Error detected:", errorMessage)
-        TeleportService:Teleport(game.PlaceId, player)
+        if errorMessage and errorMessage ~= "" then
+            warn("[AutoRejoin] Error detected: " .. errorMessage)
+            TeleportService:Teleport(game.PlaceId, player)
+        end
     end)
 end
 
-
 -----------------------------------------------------------
--- 🚀 KAITUN LOADER (ANTI FAIL - FINAL)
+-- 🚀 KAITUN LOADER (DELAY 10s)
 -----------------------------------------------------------
 if toggleKaitun then
     task.spawn(function()
-
-        if _G.__KAITUN_STATE__ == "loaded" then return end
-        _G.__KAITUN_STATE__ = "loading"
-
-        -- Đợi Loading GUI biến mất
-        local loadingGui = playerGui:FindFirstChild("Loading")
-        while loadingGui and loadingGui.Parent do
-            task.wait(0.5)
+        -- Chờ game + character ổn định
+        if not game:IsLoaded() then
+            game.Loaded:Wait()
         end
 
-        -- Buffer an toàn
-        task.wait(2)
+        repeat task.wait()
+        until player.Character
+        and player.Character:FindFirstChild("HumanoidRootPart")
 
-        -- Retry loop (KHÔNG THỂ FAIL)
-        while true do
-            local ok, err = pcall(function()
-                script_key = "ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe"
-                getgenv().Config = {
-                    HUDHopMinGain = 70,
-                    FPSCap = 10,
-                    Mode = "battlepass",
-                    Webhook = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",
-                    DiscordID = "882156430797459456"
-                }
+        -- Delay thêm 10 giây để tránh stuck loading
+        task.wait(7)
 
-                loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
-            end)
+        warn("[Kaitun] Loading kaitun script...")
 
-            if ok then
-                _G.__KAITUN_STATE__ = "loaded"
-                warn("[Kaitun] Loaded successfully")
-                break
-            else
-                warn("[Kaitun] Load failed, retrying...", err)
-                task.wait(5)
-            end
-        end
+        script_key = "ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe"
+        getgenv().Config = {
+            HUDHopMinGain = 70,
+            FPSCap     = 15,
+            Mode       = "battlepass",
+            Webhook    = "https://discord.com/api/webhooks/xxxxx",
+            DiscordID  = "882156430797459456"
+        }
+
+        loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
     end)
 end
