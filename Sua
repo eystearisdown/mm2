@@ -99,19 +99,12 @@ if toggleKaitun then
             game.Loaded:Wait()
         end
 
-        repeat task.wait()
-        until player.Character
-        and player.Character:FindFirstChild("HumanoidRootPart")
-
-        -- Delay thêm 10 giây để tránh stuck loading
         task.wait(7)
-
-        warn("[Kaitun] Loading kaitun script...")
 
         script_key = "ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe"
         getgenv().Config = {
             HUDHopMinGain = 70,
-            FPSCap     = 15,
+            FPSCap     = 10,
             Mode       = "battlepass",
             Webhook    = "https://discord.com/api/webhooks/xxxxx",
             DiscordID  = "882156430797459456"
