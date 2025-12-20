@@ -95,7 +95,7 @@ end
 if toggleKaitun then
     task.spawn(function()
 
-        task.wait(10)
+        task.wait(3)
 
         script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
         getgenv().Config = {
