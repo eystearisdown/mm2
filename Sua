@@ -94,9 +94,6 @@ end
 -----------------------------------------------------------
 if toggleKaitun then
     task.spawn(function()
-        if not game:IsLoaded() then
-            game.Loaded:Wait()
-        end
 
         task.wait(10)
 
