@@ -97,11 +97,11 @@ if toggleKaitun then
         game.Loaded:Wait()
     end
 
-    task.wait(10)
+    task.wait(7)
 
     script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
     getgenv().Config = {
-        HUDHopMinGain = 35,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes) 
+        HUDHopMinGain = 70,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes) 
         FPSCap     = 10,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
         Mode       = "battlepass",                     -- "battlepass" or "crate"
         Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",
