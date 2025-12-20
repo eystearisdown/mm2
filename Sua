@@ -90,26 +90,23 @@ if toggleRejoinOnError then
 end
 
 -----------------------------------------------------------
--- 🚀 KAITUN LOADER (DELAY 10s)
+-- 🚀 KAITUN LOADER (MAIN THREAD - NO task.spawn)
 -----------------------------------------------------------
 if toggleKaitun then
-    task.spawn(function()
-        -- Chờ game + character ổn định
-        if not game:IsLoaded() then
-            game.Loaded:Wait()
-        end
+    if not game:IsLoaded() then
+        game.Loaded:Wait()
+    end
 
-        task.wait(7)
+    task.wait(10)
 
-        script_key = "ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe"
-        getgenv().Config = {
-            HUDHopMinGain = 70,
-            FPSCap     = 10,
-            Mode       = "battlepass",
-            Webhook    = "https://discord.com/api/webhooks/xxxxx",
-            DiscordID  = "882156430797459456"
-        }
+    script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
+    getgenv().Config = {
+        HUDHopMinGain = 35,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes) 
+        FPSCap     = 10,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
+        Mode       = "battlepass",                     -- "battlepass" or "crate"
+        Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",
+        DiscordID  = "882156430797459456"
+    }
 
-        loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
-    end)
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
 end
