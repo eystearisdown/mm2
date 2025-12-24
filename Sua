@@ -101,12 +101,12 @@ if toggleKaitun then
 
     script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
     getgenv().Config = {
-        HUDHopMinGain = 80,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes) 
+        HUDHopMinGain = 80,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
+        HUDHopWindowSec = 600,  -- Second                    --
         FPSCap     = 11,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
-        Mode       = "battlepass",                     -- "battlepass" or "crate"
-        Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",
-        DiscordID  = "882156430797459456"
+        Mode       = "battlepass",                     -- "battlepass" or "crate" or "mysterybox"
+        Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",                    -- Crate notify
+        DiscordID  = "882156430797459456"              -- Crate
     }
-
     loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
 end
