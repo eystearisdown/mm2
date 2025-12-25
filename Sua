@@ -89,6 +89,30 @@ if toggleRejoinOnError then
     end)
 end
 
+
+-----------------------------------------------------------
+-- ▶️ AUTO CLICK PLAY / CHƠI (FOR KAITUN)
+-----------------------------------------------------------
+if toggleKaitun then
+    task.spawn(function()
+        while task.wait(0.3) do
+            for _, gui in ipairs(playerGui:GetDescendants()) do
+                if gui:IsA("TextButton")
+                    and gui.Visible
+                    and (gui.Text == "Chơi" or gui.Text == "Play") then
+
+                    -- Tránh spam click cùng 1 nút
+                    if not gui:GetAttribute("AutoClicked") then
+                        gui:SetAttribute("AutoClicked", true)
+                        firesignal(gui.MouseButton1Click)
+                        warn("[AutoPlay] Clicked:", gui.Text)
+                    end
+                end
+            end
+        end
+    end)
+end
+
 -----------------------------------------------------------
 -- 🚀 KAITUN LOADER (MAIN THREAD - NO task.spawn)
 -----------------------------------------------------------
