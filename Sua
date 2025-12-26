@@ -125,8 +125,8 @@ if toggleKaitun then
 
     script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
     getgenv().Config = {
-        HUDHopMinGain = 80,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
-        HUDHopWindowSec = 600,  -- Second                    --
+        HUDHopMinGain = 70,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
+        HUDHopWindowSec = 300,  -- Second                    --
         FPSCap     = 11,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
         Mode       = "battlepass",                     -- "battlepass" or "crate" or "mysterybox"
         Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",                    -- Crate notify
