@@ -117,11 +117,8 @@ end
 -- 🚀 KAITUN LOADER (MAIN THREAD - NO task.spawn)
 -----------------------------------------------------------
 if toggleKaitun then
-    if not game:IsLoaded() then
-        game.Loaded:Wait()
-    end
 
-    task.wait(10)
+    task.wait(8)
 
     script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
     getgenv().Config = {
