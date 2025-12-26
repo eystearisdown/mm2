@@ -1,5 +1,5 @@
 -- ==== CONFIG SECTION ====
-local toggleTabletMode       = (_G.toggleTabletMode ~= nil) and _G.toggleTabletMend or false
+local toggleTabletMode       = (_G.toggleTabletMode ~= nil) and _G.toggleTabletMode or false
 local togglePhoneMode        = (_G.togglePhoneMode ~= nil) and _G.togglePhoneMode or false
 local toggleRejoinIfLoading  = (_G.toggleRejoinIfLoading ~= nil) and _G.toggleRejoinIfLoading or false
 local toggleRejoinOnError    = (_G.toggleRejoinOnError ~= nil) and _G.toggleRejoinOnError or false
@@ -14,28 +14,6 @@ local GuiService = game:GetService("GuiService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
------------------------------------------------------------
--- 🚀 KAITUN LOADER (MAIN THREAD - NO task.spawn)
------------------------------------------------------------
-if toggleKaitun then
-    if not game:IsLoaded() then
-        game.Loaded:Wait()
-    end
-
-    task.wait(10)
-
-    script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
-    getgenv().Config = {
-        HUDHopMinGain = 85,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
-        HUDHopWindowSec = 600,  -- Second                    --
-        FPSCap     = 11,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
-        Mode       = "battlepass",                     -- "battlepass" or "crate" or "mysterybox"
-        Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",                    -- Crate notify
-        DiscordID  = "882156430797459456"              -- Crate
-    }
-    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
-end
 
 -----------------------------------------------------------
 -- 📱 AUTO PHONE MODE
@@ -74,29 +52,6 @@ if toggleTabletMode then
         end
     end)
 end
------------------------------------------------------------
--- ▶️ AUTO CLICK PLAY / CHƠI (FOR KAITUN)
------------------------------------------------------------
-if toggleKaitun then
-    task.spawn(function()
-        while task.wait(0.3) do
-            for _, gui in ipairs(playerGui:GetDescendants()) do
-                if gui:IsA("TextButton")
-                    and gui.Visible
-                    and (gui.Text == "Chơi" or gui.Text == "Play") then
-
-                    -- Tránh spam click cùng 1 nút
-                    if not gui:GetAttribute("AutoClicked") then
-                        gui:SetAttribute("AutoClicked", true)
-                        firesignal(gui.MouseButton1Click)
-                        warn("[AutoPlay] Clicked:", gui.Text)
-                    end
-                end
-            end
-        end
-    end)
-end
-
 
 -----------------------------------------------------------
 -- 🔁 AUTO REJOIN IF LOADING STUCK
@@ -132,4 +87,50 @@ if toggleRejoinOnError then
             TeleportService:Teleport(game.PlaceId, player)
         end
     end)
+end
+
+
+-----------------------------------------------------------
+-- ▶️ AUTO CLICK PLAY / CHƠI (FOR KAITUN)
+-----------------------------------------------------------
+if toggleKaitun then
+    task.spawn(function()
+        while task.wait(0.3) do
+            for _, gui in ipairs(playerGui:GetDescendants()) do
+                if gui:IsA("TextButton")
+                    and gui.Visible
+                    and (gui.Text == "Chơi" or gui.Text == "Play") then
+
+                    -- Tránh spam click cùng 1 nút
+                    if not gui:GetAttribute("AutoClicked") then
+                        gui:SetAttribute("AutoClicked", true)
+                        firesignal(gui.MouseButton1Click)
+                        warn("[AutoPlay] Clicked:", gui.Text)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-----------------------------------------------------------
+-- 🚀 KAITUN LOADER (MAIN THREAD - NO task.spawn)
+-----------------------------------------------------------
+if toggleKaitun then
+    if not game:IsLoaded() then
+        game.Loaded:Wait()
+    end
+
+    task.wait(10)
+
+    script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
+    getgenv().Config = {
+        HUDHopMinGain = 85,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
+        HUDHopWindowSec = 600,  -- Second                    --
+        FPSCap     = 11,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
+        Mode       = "battlepass",                     -- "battlepass" or "crate" or "mysterybox"
+        Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",                    -- Crate notify
+        DiscordID  = "882156430797459456"              -- Crate
+    }
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
 end
