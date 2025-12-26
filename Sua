@@ -118,8 +118,6 @@ end
 -----------------------------------------------------------
 if toggleKaitun then
 
-    task.wait(8)
-
     script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
     getgenv().Config = {
         HUDHopMinGain = 85,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
