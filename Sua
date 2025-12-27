@@ -1,11 +1,9 @@
--- ==== CONFIG SECTION ====
+-- ==== CONFIG ====
 local toggleTabletMode       = (_G.toggleTabletMode ~= nil) and _G.toggleTabletMode or false
 local togglePhoneMode        = (_G.togglePhoneMode ~= nil) and _G.togglePhoneMode or false
 local toggleRejoinIfLoading  = (_G.toggleRejoinIfLoading ~= nil) and _G.toggleRejoinIfLoading or false
 local toggleRejoinOnError    = (_G.toggleRejoinOnError ~= nil) and _G.toggleRejoinOnError or false
 local toggleKaitun           = (_G.toggleKaitun ~= nil) and _G.toggleKaitun or false
--- =========================
-
 
 -- SERVICES
 local Players = game:GetService("Players")
@@ -15,97 +13,63 @@ local GuiService = game:GetService("GuiService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
------------------------------------------------------------
--- 📱 AUTO PHONE MODE
------------------------------------------------------------
+-- WAIT FULL GAME
+local function waitInGame()
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    while playerGui:FindFirstChild("Loading") do task.wait(0.3) end
+    while playerGui:FindFirstChild("DeviceSelect") do task.wait(0.3) end
+    task.wait(2)
+end
+
+-- AUTO PHONE
 if togglePhoneMode then
     task.spawn(function()
         while task.wait(0.2) do
-            local deviceSelect = playerGui:FindFirstChild("DeviceSelect")
-            if deviceSelect and deviceSelect.Enabled then
-                local container = deviceSelect:FindFirstChild("Container")
-                local phone = container and container:FindFirstChild("Phone")
-                local button = phone and phone:FindFirstChild("Button")
-                if button and button.Visible then
-                    firesignal(button.MouseButton1Click)
-                end
-            end
+            local d = playerGui:FindFirstChild("DeviceSelect")
+            local b = d and d.Container and d.Container.Phone and d.Container.Phone.Button
+            if b and b.Visible then firesignal(b.MouseButton1Click) end
         end
     end)
 end
 
------------------------------------------------------------
--- 💻 AUTO TABLET MODE
------------------------------------------------------------
+-- AUTO TABLET
 if toggleTabletMode then
     task.spawn(function()
         while task.wait(0.2) do
-            local deviceSelect = playerGui:FindFirstChild("DeviceSelect")
-            if deviceSelect and deviceSelect.Enabled then
-                local container = deviceSelect:FindFirstChild("Container")
-                local tablet = container and container:FindFirstChild("Tablet")
-                local button = tablet and tablet:FindFirstChild("Button")
-                if button and button.Visible then
-                    firesignal(button.MouseButton1Click)
-                end
-            end
+            local d = playerGui:FindFirstChild("DeviceSelect")
+            local b = d and d.Container and d.Container.Tablet and d.Container.Tablet.Button
+            if b and b.Visible then firesignal(b.MouseButton1Click) end
         end
     end)
 end
 
------------------------------------------------------------
--- 🔁 AUTO REJOIN IF LOADING STUCK
------------------------------------------------------------
+-- REJOIN LOADING
 if toggleRejoinIfLoading then
     task.spawn(function()
-        local loadingGui = playerGui:WaitForChild("Loading", 10)
-        if not loadingGui then return end
-
-        local removed = false
-        loadingGui.AncestryChanged:Connect(function()
-            if not loadingGui:IsDescendantOf(game) then
-                removed = true
-            end
-        end)
-
+        local l = playerGui:WaitForChild("Loading", 10)
+        if not l then return end
         task.delay(60, function()
-            if not removed then
-                warn("[AutoRejoin] Loading stuck. Rejoining...")
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
-            end
+            if l.Parent then TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player) end
         end)
     end)
 end
 
------------------------------------------------------------
--- ⚠️ AUTO REJOIN ON ERROR MESSAGE
------------------------------------------------------------
+-- REJOIN ERROR
 if toggleRejoinOnError then
-    GuiService.ErrorMessageChanged:Connect(function(errorMessage)
-        if errorMessage and errorMessage ~= "" then
-            warn("[AutoRejoin] Error detected: " .. errorMessage)
-            TeleportService:Teleport(game.PlaceId, player)
-        end
+    GuiService.ErrorMessageChanged:Connect(function(m)
+        if m and m ~= "" then TeleportService:Teleport(game.PlaceId, player) end
     end)
 end
 
-
------------------------------------------------------------
--- ▶️ AUTO CLICK PLAY / CHƠI (FOR KAITUN)
------------------------------------------------------------
+-- AUTO PLAY
 if toggleKaitun then
     task.spawn(function()
         while task.wait(0.3) do
-            for _, gui in ipairs(playerGui:GetDescendants()) do
-                if gui:IsA("TextButton")
-                    and gui.Visible
-                    and (gui.Text == "Chơi" or gui.Text == "Play") then
-
-                    -- Tránh spam click cùng 1 nút
-                    if not gui:GetAttribute("AutoClicked") then
-                        gui:SetAttribute("AutoClicked", true)
-                        firesignal(gui.MouseButton1Click)
-                        warn("[AutoPlay] Clicked:", gui.Text)
+            for _,v in ipairs(playerGui:GetDescendants()) do
+                if v:IsA("TextButton") and v.Visible and (v.Text=="Chơi" or v.Text=="Play") then
+                    if not v:GetAttribute("AutoClicked") then
+                        v:SetAttribute("AutoClicked", true)
+                        firesignal(v.MouseButton1Click)
                     end
                 end
             end
@@ -113,24 +77,18 @@ if toggleKaitun then
     end)
 end
 
------------------------------------------------------------
--- 🚀 KAITUN LOADER (MAIN THREAD - NO task.spawn)
------------------------------------------------------------
+-- KAITUN
 if toggleKaitun then
-    if not game:IsLoaded() then
-        game.Loaded:Wait()
-    end
+    waitInGame()
 
-    task.wait(10)
-
-    script_key="ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe";
+    script_key = "ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe"
     getgenv().Config = {
-        HUDHopMinGain = 85,     -- Tokens                    -- Minimum snow tokens collected (in 10 minutes)
-        HUDHopWindowSec = 600,  -- Second                    --
-        FPSCap     = 11,                                      -- Best fps optimized, can change if you want! (recommend 5 fps+)
-        Mode       = "battlepass",                     -- "battlepass" or "crate" or "mysterybox"
-        Webhook    = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",                    -- Crate notify
-        DiscordID  = "882156430797459456"              -- Crate
+        HUDHopMinGain = 85,
+        HUDHopWindowSec = 600,
+        FPSCap = 11,
+        Mode = "battlepass",
+        Webhook = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",
+        DiscordID = "882156430797459456"
     }
     loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
 end
