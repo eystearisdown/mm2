@@ -79,16 +79,34 @@ end
 
 -- KAITUN
 if toggleKaitun then
-    waitInGame()
-
-    script_key = "ctpNJSmIRRXxOUiCFKjoWPfXuNznciCe"
+   script_key = "rYfsRprWzkOxbPLmzepIOzZeiRDQsllh"
     getgenv().Config = {
-        HUDHopMinGain = 85,
-        HUDHopWindowSec = 600,
-        FPSCap = 11,
-        Mode = "battlepass",
-        Webhook = "https://discord.com/api/webhooks/1240444719230619728/BVoeodXRTpTA7P4vjw822AHLdQnQqdMIRTqtr5Q4idWHGEMxeQB_63KclgBhfs4slDJk",
-        DiscordID = "882156430797459456"
+        LOCK_FPS = 10, -- Only work in Web Version
+        FARM_MODE = "BattlePass", -- BattlePass / Crate / Gifts / Multi
+        LIST_FARM_MODE = {}, -- If FARM_MODE = Multi
+        STOP_MULTI_FARM_MODE_IF_FULL_TIER_AND_CAN_BUY_REWARD = false,
+        AUTO_RESTART_WHEN_UPDATE = true,
+        HOP_WHEN_COIN_EARNED_LOWER = 250,
+        TIME_TO_CHECK_COIN_EARNED = 1800,
+        DISPLAY_UI = true,
+        STOP_AUTO_BUY_FINAL_REWARD = false, -- Stop auto buy Godly Item when completed Battle Pass
+        WEBHOOK_URL = "https://discord.com/api/webhooks/1450026779526828094/-k85GgH1oh82MZyNpnAfz-6aECq42zCTjf9HIrWR3ooZ7LIU0tyQTdDDkiym-LCia5zM",
+        WEBHOOK_NOTE = ""
     }
-    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/fbdaaeddcf4c27445764a37ba601f35a.lua"))()
-end
+
+    task.spawn(function()
+        local LastCheck = tick()
+        while task.wait() do
+            if getgenv().ScriptLoaded then
+                break
+            end
+
+            pcall(function()
+                if LastCheck + 180 <= tick() then
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+                end
+            end)
+        end
+    end)
+
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/8b381051c5e99846fe64dcea7d597e49.lua"))()
