@@ -2887,11 +2887,7 @@ end
 
 function loadWindUI()
     local sources = {
-        "https://raw.githubusercontent.com/eystearisdown/nevoirs/main/main.lua",
-        "https://raw.githubusercontent.com/eystearisdown/nevoirs/refs/heads/main/main.lua",
-        "https://cdn.jsdelivr.net/gh/eystearisdown/nevoirs@main/main.lua",
-        "https://github.com/eystearisdown/nevoirs/raw/refs/heads/main/main.lua",
-        "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua",
+        "https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/main.lua",
     }
 
     local function cacheBust(url)

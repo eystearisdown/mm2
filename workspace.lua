@@ -375,8 +375,7 @@ end
 -- ══════════════════════════════════════════════════════════════════════════════
 local function loadWindUI()
     local sources = {
-        "https://raw.githubusercontent.com/eystearisdown/nevoirs/main/main.lua",
-        "https://raw.githubusercontent.com/eystearisdown/nevoirs/refs/heads/main/main.lua",
+        "https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/main.lua",
     }
     for _, url in ipairs(sources) do
         local ok, lib = pcall(function()
