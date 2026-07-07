@@ -2887,75 +2887,21 @@ end
 
 function loadWindUI()
     local sources = {
-        "https://raw.githubusercontent.com/eystearisdown/mm2/refs/heads/main/main.lua",
+        "https://raw.githubusercontent.com/eystearisdown/nevoirs/main/main.lua",
+        "https://raw.githubusercontent.com/eystearisdown/nevoirs/refs/heads/main/main.lua",
     }
 
-    local function cacheBust(url)
-        local sep = url:find("?", 1, true) and "&" or "?"
-        local stamp = tostring(os.time()) .. "-" .. tostring(math.floor((os.clock() or 0) * 1000000)) .. "-" .. tostring(math.random(100000, 999999))
-        return url .. sep .. "nevoirs_cb=" .. stamp
+    for _, url in ipairs(sources) do
+        local ok, lib = pcall(function()
+            local source = game:HttpGet(url)
+            local fn = loadstring(source)
+            return fn()
+        end)
+        if ok and lib then
+            return lib
+        end
     end
 
-    local function badSource(source)
-        if type(source) ~= "string" then
-            return true, "source_not_string"
-        end
-        if #source < 1024 then
-            return true, "source_too_short_" .. tostring(#source)
-        end
-
-        local head = source:sub(1, 6000)
-        local lower = head:lower()
-        if source:sub(1, 3) == "429" or lower:find("too many requests", 1, true) then
-            return true, "github_429"
-        end
-        if lower:find("<!doctype", 1, true) or lower:find("<html", 1, true) then
-            return true, "html_response"
-        end
-        if lower:find("rate limit", 1, true) then
-            return true, "rate_limited"
-        end
-        if lower:find("not found", 1, true) and #source < 10000 then
-            return true, "not_found"
-        end
-
-        return false, nil
-    end
-
-    local lastErr = "unknown"
-
-    for attempt = 1, 2 do
-        for index, baseUrl in ipairs(sources) do
-            local url = cacheBust(baseUrl)
-            local okGet, source = pcall(function()
-                return game:HttpGet(url, true)
-            end)
-
-            if okGet then
-                local bad, reason = badSource(source)
-                if not bad then
-                    local fn, loadErr = loadstring(source)
-                    if fn then
-                        local okRun, lib = pcall(fn)
-                        if okRun and lib then
-                            warn("[Nevoirs] WindUI loaded from source #" .. tostring(index) .. " attempt " .. tostring(attempt))
-                            return lib
-                        end
-                        lastErr = "run_failed_source_" .. tostring(index) .. ": " .. tostring(lib)
-                    else
-                        lastErr = "compile_failed_source_" .. tostring(index) .. ": " .. tostring(loadErr)
-                    end
-                else
-                    lastErr = "bad_source_" .. tostring(index) .. ": " .. tostring(reason)
-                end
-            else
-                lastErr = "http_failed_source_" .. tostring(index) .. ": " .. tostring(source)
-            end
-        end
-        task.wait(0.35 * attempt)
-    end
-
-    warn("[Nevoirs] WindUI load failed: " .. tostring(lastErr))
     return nil
 end
 

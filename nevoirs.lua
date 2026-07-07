@@ -24,10 +24,20 @@ local HttpService       = game:GetService("HttpService")
 local NEVOIRS_UI_ICON = "rbxassetid://106478063464970"
 local CAMERAREPLICA = nil -- silent camera replica cho Auto Nearby Kill; không xoay camera thật
 
+pcall(function()
+    if type(_G.__NevoirsLastNoclipCleanup) == "function" then
+        _G.__NevoirsLastNoclipCleanup()
+    end
+    if type(_G.__NevoirsLastMoonwalkCleanup) == "function" then
+        _G.__NevoirsLastMoonwalkCleanup()
+    end
+end)
+
 -- ── States ────────────────────────────────────────────────────────────────────
 local States = {
     TPWalk       = false,
     Noclip       = false,
+    Moonwalk     = false,
     InfiniteJump  = false,
     ESPPlayer    = false,
     ESPMonster   = false,
@@ -1070,111 +1080,152 @@ local function toggleTPWalk(e) States.TPWalk = e; applyTPWalk() end
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- LOGIC: NOCLIP
+-- Dạng tối giản giống Infinite Yield: bật thì ép CanCollide=false theo Stepped,
+-- tắt thì chỉ ngắt loop. Không reset Humanoid/velocity/camera để tránh giật,
+-- lock hướng, hoặc lỗi cutscene.
 -- ══════════════════════════════════════════════════════════════════════════════
 local noclipConn
-local noclipDescConn
-local noclipOrig = setmetatable({}, { __mode = "k" })
 
-local function stopNoclipMotion(char)
+local function setCharacterNoclip(char)
     char = char or getChar()
     if not char then return end
 
-    local hum = char:FindFirstChildWhichIsA("Humanoid")
-    local hrp = getHRP(char)
-
-    if hum then
-        pcall(function() hum.Sit = false end)
-        pcall(function() hum.PlatformStand = false end)
-        pcall(function() hum.AutoRotate = true end)
-        pcall(function() hum:Move(Vector3.zero, true) end)
-        pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
-        task.defer(function()
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and part.CanCollide then
             pcall(function()
-                if hum and hum.Parent then
-                    hum:ChangeState(Enum.HumanoidStateType.Running)
-                end
+                part.CanCollide = false
             end)
-        end)
-    end
-
-    if hrp then
-        pcall(function() hrp.AssemblyLinearVelocity = Vector3.zero end)
-        pcall(function() hrp.AssemblyAngularVelocity = Vector3.zero end)
-        pcall(function() hrp.Velocity = Vector3.zero end)
-        pcall(function() hrp.RotVelocity = Vector3.zero end)
-    end
-end
-
-local function cacheNoclipPart(part)
-    if part and part:IsA("BasePart") and noclipOrig[part] == nil then
-        noclipOrig[part] = part.CanCollide
-    end
-end
-
-local function restoreNoclipCollisions(char)
-    if noclipDescConn then noclipDescConn:Disconnect(); noclipDescConn = nil end
-
-    char = char or getChar()
-    for part, oldState in pairs(noclipOrig) do
-        if typeof(part) == "Instance" and part:IsA("BasePart") and part.Parent then
-            if (not char) or part:IsDescendantOf(char) then
-                pcall(function() part.CanCollide = oldState and true or false end)
-            end
         end
     end
-
-    noclipOrig = setmetatable({}, { __mode = "k" })
-    stopNoclipMotion(char)
 end
 
 local function applyNoclip()
-    if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+    if noclipConn then
+        noclipConn:Disconnect()
+        noclipConn = nil
+    end
 
     if not States.Noclip then
-        restoreNoclipCollisions(getChar())
         return
     end
 
-    local char = getChar()
-    if char then
-        for _, part in ipairs(char:GetDescendants()) do
-            cacheNoclipPart(part)
-            if part:IsA("BasePart") then
-                pcall(function() part.CanCollide = false end)
-            end
-        end
-
-        if noclipDescConn then noclipDescConn:Disconnect(); noclipDescConn = nil end
-        noclipDescConn = char.DescendantAdded:Connect(function(part)
-            task.defer(function()
-                cacheNoclipPart(part)
-                if States.Noclip and part and part:IsA("BasePart") then
-                    pcall(function() part.CanCollide = false end)
-                end
-            end)
-        end)
-    end
+    setCharacterNoclip(getChar())
 
     noclipConn = RunService.Stepped:Connect(function()
         if not States.Noclip then
-            applyNoclip()
+            if noclipConn then
+                noclipConn:Disconnect()
+                noclipConn = nil
+            end
+            return
+        end
+        setCharacterNoclip(getChar())
+    end)
+end
+
+local function toggleNoclip(e)
+    States.Noclip = e and true or false
+    applyNoclip()
+end
+
+pcall(function()
+    _G.__NevoirsLastNoclipCleanup = function()
+        if noclipConn then
+            noclipConn:Disconnect()
+            noclipConn = nil
+        end
+        States.Noclip = false
+    end
+end)
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- LOGIC: MOONWALK / REVERSE FACING
+-- Xoay hướng nhân vật ngược lại với hướng camera theo trục ngang.
+-- Không dùng BodyGyro/BodyVelocity, không reset velocity, không đổi Humanoid state.
+-- ══════════════════════════════════════════════════════════════════════════════
+local moonwalkConn
+local moonwalkAutoRotateCache = setmetatable({}, { __mode = "k" })
+
+local function clearMoonwalkAutoRotate()
+    for hum, oldAutoRotate in pairs(moonwalkAutoRotateCache) do
+        if typeof(hum) == "Instance" and hum.Parent then
+            pcall(function()
+                hum.AutoRotate = oldAutoRotate
+            end)
+        end
+    end
+    moonwalkAutoRotateCache = setmetatable({}, { __mode = "k" })
+end
+
+local function setMoonwalkHumanoid(hum)
+    if not hum then return end
+    if moonwalkAutoRotateCache[hum] == nil then
+        moonwalkAutoRotateCache[hum] = hum.AutoRotate
+    end
+    if hum.AutoRotate ~= false then
+        pcall(function() hum.AutoRotate = false end)
+    end
+end
+
+local function applyMoonwalk()
+    if moonwalkConn then
+        moonwalkConn:Disconnect()
+        moonwalkConn = nil
+    end
+
+    if not States.Moonwalk then
+        clearMoonwalkAutoRotate()
+        return
+    end
+
+    moonwalkConn = RunService.RenderStepped:Connect(function()
+        if not States.Moonwalk then
+            if moonwalkConn then
+                moonwalkConn:Disconnect()
+                moonwalkConn = nil
+            end
+            clearMoonwalkAutoRotate()
             return
         end
 
-        local c = getChar()
-        if not c then return end
+        local char = getChar()
+        if not char then return end
 
-        for _, part in ipairs(c:GetDescendants()) do
-            if part:IsA("BasePart") then
-                cacheNoclipPart(part)
-                if part.CanCollide then
-                    pcall(function() part.CanCollide = false end)
-                end
-            end
-        end
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local cam = Workspace.CurrentCamera
+        if not hum or not hrp or not cam or hum.Health <= 0 then return end
+
+        setMoonwalkHumanoid(hum)
+
+        local look = cam.CFrame.LookVector
+        local flatLook = Vector3.new(look.X, 0, look.Z)
+        if flatLook.Magnitude < 0.05 then return end
+
+        local reverseLook = -flatLook.Unit
+        local pos = hrp.Position
+
+        pcall(function()
+            hrp.CFrame = CFrame.lookAt(pos, pos + reverseLook)
+        end)
     end)
 end
-local function toggleNoclip(e) States.Noclip = e and true or false; applyNoclip() end
+
+local function toggleMoonwalk(e)
+    States.Moonwalk = e and true or false
+    applyMoonwalk()
+end
+
+pcall(function()
+    _G.__NevoirsLastMoonwalkCleanup = function()
+        if moonwalkConn then
+            moonwalkConn:Disconnect()
+            moonwalkConn = nil
+        end
+        States.Moonwalk = false
+        clearMoonwalkAutoRotate()
+    end
+end)
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- LOGIC: INFINITE JUMP
@@ -1335,7 +1386,6 @@ States.VFly = false  -- khai báo sau vì toggleVFly dùng
 -- ── Respawn ───────────────────────────────────────────────────────────────────
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.7)
-    noclipOrig = setmetatable({}, { __mode = "k" })
     if States.TPWalk       then applyTPWalk()            end
     if States.Noclip       then applyNoclip()            end
     if States.InfiniteJump then toggleInfiniteJump(true) end
@@ -2861,7 +2911,10 @@ end
 
 windowSize, minSize, maxSize, sidebarWidth, canResize = getWindowSize()
 openButtonScale = UserInputService.TouchEnabled and 0.72 or 0.66
-DEFAULT_UI_SCALE = UserInputService.TouchEnabled and 0.62 or 0.60
+BASE_UI_SCALE = UserInputService.TouchEnabled and 0.62 or 0.60
+DEFAULT_UI_SCALE = getNumberSetting("UIScale", BASE_UI_SCALE, 0.58, 0.90)
+BASE_TOGGLE_SIZE_SCALE = 1
+ToggleSizeScale = getNumberSetting("ToggleSizeScale", BASE_TOGGLE_SIZE_SCALE, 0.60, 2.20)
 
 Window = WindUI:CreateWindow({
     Title = "Nevoirs - Rage",
@@ -3004,8 +3057,9 @@ function createNevoirsLeftToggle()
     gui.DisplayOrder = 999998
     gui.Parent = pg
 
-    local hitSize = UserInputService.TouchEnabled and 46 or 42
-    local visualSize = UserInputService.TouchEnabled and 20 or 18 -- tăng lại 2 lần so với bản đã thu nhỏ
+    local scale = math.clamp(tonumber(ToggleSizeScale) or 1, 0.60, 2.20)
+    local hitSize = math.floor((UserInputService.TouchEnabled and 46 or 42) * scale)
+    local visualSize = math.floor((UserInputService.TouchEnabled and 20 or 18) * scale)
     local btn = Instance.new("ImageButton")
     btn.Name = "NevoirsToggle"
     btn.AnchorPoint = Vector2.new(0, 0.5)
@@ -3043,6 +3097,30 @@ function createNevoirsLeftToggle()
 end
 
 createNevoirsLeftToggle()
+
+function applyNevoirsToggleSize()
+    local pg = LocalPlayer and LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if not pg then return end
+
+    local gui = pg:FindFirstChild("Nevoirs_LeftToggle_UI")
+    local btn = gui and gui:FindFirstChild("NevoirsToggle")
+    local logo = btn and btn:FindFirstChild("Logo")
+    if not btn or not logo then return end
+
+    local scale = math.clamp(tonumber(ToggleSizeScale) or 1, 0.60, 2.20)
+    local hitSize = math.floor((UserInputService.TouchEnabled and 46 or 42) * scale)
+    local visualSize = math.floor((UserInputService.TouchEnabled and 20 or 18) * scale)
+
+    btn.Size = UDim2.fromOffset(hitSize, hitSize)
+    logo.Size = UDim2.fromOffset(visualSize, visualSize)
+
+    local st = logo:FindFirstChildOfClass("UIStroke")
+    if st then
+        st.Thickness = math.max(1, 1 * scale)
+    end
+end
+
+applyNevoirsToggleSize()
 
 -- Không ép icon rbxasset thành hình tròn nữa; giữ nguyên style ảnh gốc/WindUI.
 
@@ -3177,13 +3255,20 @@ function addNumberInput(tab, title, desc, defaultText, minValue, maxValue, callb
 end
 
 
-safeParagraph(SettingTab, "UI Scale", "Chỉnh kích cỡ tổng thể UI. Mặc định đặt thấp để tránh chèn ép màn hình.", "settings")
+safeParagraph(SettingTab, "UI Scale", "Chỉnh kích cỡ tổng thể UI. Các giá trị được lưu trong workspace executor.", "settings")
 addNumberInput(SettingTab, "UI Scale", "Kéo/nhập scale UI.", DEFAULT_UI_SCALE, 0.58, 0.90, function(v)
-    pcall(function() Window:SetUIScale(math.clamp(tonumber(v) or DEFAULT_UI_SCALE, 0.58, 0.90)) end)
-end, 0.01)
+    DEFAULT_UI_SCALE = math.clamp(tonumber(v) or DEFAULT_UI_SCALE, 0.58, 0.90)
+    pcall(function() Window:SetUIScale(DEFAULT_UI_SCALE) end)
+end, 0.01, "UIScale")
+
+safeParagraph(SettingTab, "Toggle", "Chỉnh kích cỡ nút ẩn/hiện menu. 1 = mặc định, lớn hơn là to hơn.", "mouse-pointer-click")
+addNumberInput(SettingTab, "Toggle Size", "Kích cỡ nút toggle ngoài màn hình.", ToggleSizeScale, 0.60, 2.20, function(v)
+    ToggleSizeScale = math.clamp(tonumber(v) or ToggleSizeScale or 1, 0.60, 2.20)
+    applyNevoirsToggleSize()
+end, 0.05, "ToggleSizeScale")
 
 -- Cá nhân
-safeParagraph(PlayerTab, "Cá nhân", "Giữ nguyên logic local player: TPWalk, Noclip, Jump, Fullbright, VFly.", "user")
+safeParagraph(PlayerTab, "Cá nhân", "Local player: TPWalk, Noclip, Moonwalk, Jump, Fullbright, VFly.", "user")
 TPWalkSpeedInput, VFlySpeedInput = nil, nil
 
 addToggle(PlayerTab, "TPWalk", "Dịch chuyển theo hướng di chuyển hiện tại.", false, function(v)
@@ -3196,6 +3281,7 @@ end, 0.1, "TPWalkSpeed")
 setElementVisible(TPWalkSpeedInput, false)
 
 addToggle(PlayerTab, "Noclip", "Tắt va chạm nhân vật khi bật.", false, toggleNoclip)
+addToggle(PlayerTab, "Moonwalk", "Người khác sẽ thấy bạn quay ngược hướng camera hiện tại.", false, toggleMoonwalk)
 addToggle(PlayerTab, "Nhảy vô hạn", "Nhảy lại bằng JumpRequest, hỗ trợ mobile/PC.", false, toggleInfiniteJump)
 addToggle(PlayerTab, "Sáng map", "Fullbright liên tục, tắt sẽ khôi phục ánh sáng gốc.", false, toggleFullbright)
 
