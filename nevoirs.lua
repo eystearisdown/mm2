@@ -1080,149 +1080,43 @@ local function toggleTPWalk(e) States.TPWalk = e; applyTPWalk() end
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- LOGIC: NOCLIP
--- Tách noclip khỏi VFly/TP: bật thì cache collision gốc rồi ép false,
--- tắt thì restore ngay CanCollide đã cache. Không reset humanoid, velocity,
--- camera hoặc BodyMover để VFly vẫn hoạt động độc lập.
+-- Dạng tối giản giống Infinite Yield: bật thì ép CanCollide=false theo Stepped,
+-- tắt thì chỉ ngắt loop. Không reset Humanoid/velocity/camera để tránh giật,
+-- lock hướng, hoặc lỗi cutscene.
 -- ══════════════════════════════════════════════════════════════════════════════
 local noclipConn
-local noclipDescConn
-local noclipOrig = setmetatable({}, { __mode = "k" })
-local noclipActiveChar = nil
-
-local CHARACTER_BODY_PARTS = {
-    Head = true,
-    Torso = true,
-    UpperTorso = true,
-    LowerTorso = true,
-    LeftArm = true,
-    RightArm = true,
-    LeftLeg = true,
-    RightLeg = true,
-    LeftUpperArm = true,
-    LeftLowerArm = true,
-    LeftHand = true,
-    RightUpperArm = true,
-    RightLowerArm = true,
-    RightHand = true,
-    LeftUpperLeg = true,
-    LeftLowerLeg = true,
-    LeftFoot = true,
-    RightUpperLeg = true,
-    RightLowerLeg = true,
-    RightFoot = true,
-}
-
-local function isCharacterBodyPart(part, char)
-    if not part or not part:IsA("BasePart") or not char or not part:IsDescendantOf(char) then
-        return false
-    end
-    if part.Name == "HumanoidRootPart" or part.Name == "RootPart" then
-        return true
-    end
-    if part:FindFirstAncestorWhichIsA("Accessory") then
-        return false
-    end
-    return CHARACTER_BODY_PARTS[part.Name] == true
-end
-
-local function fallbackCollisionState(part, char)
-    -- Chỉ dùng khi file cũ để lại nhân vật đang false trước khi bản mới cache được.
-    -- Không đụng accessory/tool để tránh làm handle bị va chạm lung tung.
-    if not isCharacterBodyPart(part, char) then return nil end
-    if part.Name == "HumanoidRootPart" or part.Name == "RootPart" then return false end
-    return true
-end
-
-local function cacheNoclipPart(part)
-    if part and part:IsA("BasePart") and noclipOrig[part] == nil then
-        noclipOrig[part] = part.CanCollide and true or false
-    end
-end
 
 local function setCharacterNoclip(char)
     char = char or getChar()
     if not char then return end
-    noclipActiveChar = char
 
     for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            cacheNoclipPart(part)
-            if part.CanCollide ~= false then
-                pcall(function() part.CanCollide = false end)
-            end
+        if part:IsA("BasePart") and part.CanCollide then
+            pcall(function()
+                part.CanCollide = false
+            end)
         end
     end
 end
 
-local function disconnectNoclipSignals()
+local function applyNoclip()
     if noclipConn then
         noclipConn:Disconnect()
         noclipConn = nil
     end
-    if noclipDescConn then
-        noclipDescConn:Disconnect()
-        noclipDescConn = nil
-    end
-end
-
-local function restoreNoclipCollisions(char)
-    disconnectNoclipSignals()
-
-    char = char or getChar() or noclipActiveChar
-    local restoredAny = false
-
-    for part, oldState in pairs(noclipOrig) do
-        if typeof(part) == "Instance" and part:IsA("BasePart") and part.Parent then
-            if (not char) or part:IsDescendantOf(char) or (noclipActiveChar and part:IsDescendantOf(noclipActiveChar)) then
-                restoredAny = true
-                pcall(function()
-                    part.CanCollide = oldState and true or false
-                end)
-            end
-        end
-    end
-
-    -- Fallback cho trường hợp bản cũ đã để CanCollide=false trước khi bản mới được chạy.
-    -- Chỉ normalize body part chính, không chạm accessory/tool.
-    if char and not restoredAny then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                local fallback = fallbackCollisionState(part, char)
-                if fallback ~= nil then
-                    pcall(function() part.CanCollide = fallback end)
-                end
-            end
-        end
-    end
-
-    noclipOrig = setmetatable({}, { __mode = "k" })
-    noclipActiveChar = nil
-end
-
-local function applyNoclip()
-    disconnectNoclipSignals()
 
     if not States.Noclip then
-        restoreNoclipCollisions(getChar())
         return
     end
 
-    local char = getChar()
-    if char then
-        setCharacterNoclip(char)
-        noclipDescConn = char.DescendantAdded:Connect(function(part)
-            task.defer(function()
-                if States.Noclip and part and part:IsA("BasePart") then
-                    cacheNoclipPart(part)
-                    pcall(function() part.CanCollide = false end)
-                end
-            end)
-        end)
-    end
+    setCharacterNoclip(getChar())
 
     noclipConn = RunService.Stepped:Connect(function()
         if not States.Noclip then
-            restoreNoclipCollisions(getChar())
+            if noclipConn then
+                noclipConn:Disconnect()
+                noclipConn = nil
+            end
             return
         end
         setCharacterNoclip(getChar())
@@ -1236,14 +1130,11 @@ end
 
 pcall(function()
     _G.__NevoirsLastNoclipCleanup = function()
+        if noclipConn then
+            noclipConn:Disconnect()
+            noclipConn = nil
+        end
         States.Noclip = false
-        restoreNoclipCollisions(getChar())
-    end
-end)
-
-task.defer(function()
-    if not States.Noclip then
-        restoreNoclipCollisions(getChar())
     end
 end)
 
