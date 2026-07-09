@@ -97,6 +97,9 @@ local FindFirstChildOfClass = game.FindFirstChildOfClass;
 local FindFirstChildWhichIsA = game.FindFirstChildWhichIsA;
 local FindFirstAncestorWhichIsA = game.FindFirstAncestorWhichIsA;
 
+local CAMERAREPLICA = nil;
+local SAFESPOT = CFr(-176.64, 4.8, -328.34);
+
 local RED = Col3.new(255,0,0);
 local GREEN = Col3.new(0, 255, 0);
 local YELLOW = Col3.new(255, 255, 0);
@@ -241,6 +244,7 @@ local Configs = GG.Configs
 local function __ensureDefaults()
     GG.Configs = GG.Configs or {}
     local cfg = GG.Configs
+    cfg.Yen = cfg.Yen or {}
     cfg.B1C1 = cfg.B1C1 or { ESP = {} }
     cfg.B1C2 = cfg.B1C2 or { ESP = {} }
     cfg.B1C3 = cfg.B1C3 or { ESP = {} }
@@ -249,7 +253,10 @@ local function __ensureDefaults()
     cfg.B2C2 = cfg.B2C2 or { ESP = {} }
     cfg.B2C3 = cfg.B2C3 or { ESP = {} }
     cfg.B2C4 = cfg.B2C4 or { ESP = {} }
-    cfg["B" .. "3C1"] = nil
+    cfg.B3C1 = cfg.B3C1 or { ESP = {} }
+    cfg.B3C1.ESP = cfg.B3C1.ESP or {}
+    cfg.CT = cfg.CT or { ESP = {} }
+    cfg.CT.ESP = cfg.CT.ESP or {}
     cfg.NightmareCircus = cfg.NightmareCircus or {}
     cfg.NightmareCircus.Jukebox = cfg.NightmareCircus.Jukebox or { ESP = {} }
     cfg.NightmareCircus.Jukebox.ESP = cfg.NightmareCircus.Jukebox.ESP or {}
@@ -1154,6 +1161,12 @@ TheMimicPaints = TheMimicPaints or {
     end,
 }
 QueuePack = QueuePack or {}
+QueuePack.SetInfo = QueuePack.SetInfo or function(key, value)
+    GG.QUEUE_INFO = GG.QUEUE_INFO or {}
+    GG.QUEUE_INFO[key] = value
+    QUEUE_INFO[key] = value
+end
+QueuePack.Init = QueuePack.Init or function() end
 -- End compatibility layer ------------------------------------------------------
 
         local CoreConnection    = {};
@@ -1170,6 +1183,7 @@ QueuePack = QueuePack or {}
         local HumRSelf          = HumSelf and (HumSelf.RootPart or FindFirstChild(selc, "HumanoidRootPart"));
 
         local cmdm              = selff:GetMouse();
+        local YenCon            = GG.Configs.Yen;
         local B1C4Con           = GG.Configs.B1C4;
         local B2C2Con           = GG.Configs.B2C2;
         local B2C3Con           = GG.Configs.B2C3;
@@ -1181,6 +1195,7 @@ QueuePack = QueuePack or {}
         local GameAI            = FindFirstChild(W, "GameAI");
         local GameAI2           = FindFirstChild(W, "GameAI2");
         local GrabbedUI         = FindFirstChild(PSG, "QuickTime");
+        local CTQuests          = nil;
 
         local dist              = CommonF.dist;
 
@@ -1258,6 +1273,25 @@ QueuePack = QueuePack or {}
         Functions.GiveLantern = function()
             for _,v in pairs(GetChildren(R.Inventory.SkinsInfo)) do
                 v.Parent = Backpack;
+            end;
+        end;
+        Functions.YenFunc = function(MimicCurrencySpawns)
+            local Yens = GetChildren(MimicCurrencySpawns.Yen);
+            for i=1, #Yens do
+                local yen = Yens[i]; if yen then
+                    if YenCon.Aura then
+                        local Prompt = FindFirstChildWhichIsA(yen, "ProximityPrompt");
+                        if dist(yen.Position) <= 10 then
+                            fireproximityprompt(Prompt, 1, true);
+                        end;
+                    end;
+                    
+                    if YenCon.ESP then
+                        if not FindFirstChild(yen, "BoxHandleAdornment") then
+                            ESPF.ESP("Yen", yen, YELLOW, VEC2, nil, nil, false, false);
+                        end;
+                    end;
+                end;
             end;
         end;
         Functions.PlayEmote = function()
@@ -1374,7 +1408,38 @@ QueuePack = QueuePack or {}
                             ESPF.ESP("Item", v.ProxPart, GREEN, VEC2, nil, nil, false, false);
                         end;
                     end; return;
-                end; 
+                elseif PlaceId == 7251865082 or PlaceId == 7265396387 then
+                    for _,Model in pairs(GetChildren(W)) do
+                        if Model.ClassName == "Model" then
+                            local Mol2 = FindFirstChild(Model, "Model"); if not Mol2 then
+                                local ProxPart = FindFirstChild(Model, "ProxPart");
+                                if ProxPart then
+                                    local _, Bill = ESPF.ESP("Item", ProxPart, GREEN, VEC2, nil, nil, false, false);
+                                    local Prompt = FindFirstChild(ProxPart, "ProximityPrompt");
+                                    Bill.TextLabel.Text = Prompt and Prompt.ObjectText or "Item";
+                                end; continue;
+                            end;
+                            local ProxPart = FindFirstChild(Mol2, "ProxPart", true);
+                            if ProxPart then
+                                local _, Bill = ESPF.ESP("Item", ProxPart, GREEN, VEC2, nil, nil, false, false);
+                                local Prompt = FindFirstChild(ProxPart, "ProximityPrompt");
+                                Bill.TextLabel.Text = Prompt and Prompt.ObjectText or "Item";
+                            end;
+                        end;
+                    end; return;
+                elseif PlaceId == 7251866503 or PlaceId == 7265396805 then
+                    for _,v in pairs(GetChildren(W.Butterflies)) do
+                        ESPF.ESP("Item", v, GREEN, VEC2, nil, nil, false, false);
+                    end; return;
+                elseif PlaceId == 7251867155 or PlaceId == 7265397072 then
+                    for _,v in pairs(GetChildren(W.GameInfo.PuzzleItems)) do
+                        ESPF.ESP("Item", v, GREEN, VEC2, nil, nil, false, false);
+                    end; return;
+                elseif PlaceId == 7251867574 or PlaceId == 7265397848 then
+                    for _,v in pairs(GetChildren(W.GameHearts)) do
+                        ESPF.ESP("Item", v, GREEN, VEC2, nil, nil, false, false);
+                    end; return;
+                end;
             end; ESPF.Destroy("Item");
         end;
         Functions.B2C1Func = function(self, where)
@@ -1570,7 +1635,7 @@ QueuePack = QueuePack or {}
         Functions.GetPot = function(des)
             if not B2C2Con.AutoCook then return; end;
             local Prompt = CommonF.findPrompt(des, function(v)
-                return v.Parent.Parent.Name == "Pot" and IsA(v.Parent, "BasePart")
+                return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == "Pot" and IsA(v.Parent, "BasePart")
             end); if Prompt then
                 CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
                 return fireproximityprompt(Prompt, 1);
@@ -1579,7 +1644,7 @@ QueuePack = QueuePack or {}
         Functions.PlaceCoun = function(des)
             if not B2C2Con.AutoCook then return; end;
             local Prompt = CommonF.findPrompt(des, function(v)
-                return v.Parent.Parent.Name == "WoodenCounter" and IsA(v.Parent, "BasePart")
+                return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == "WoodenCounter" and IsA(v.Parent, "BasePart")
             end); if Prompt then
                 CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
                 return fireproximityprompt(Prompt, 1);
@@ -1588,7 +1653,7 @@ QueuePack = QueuePack or {}
         Functions.ToPot = function(des)
             if not B2C2Con.AutoCook then return; end;
             local Prompt = CommonF.findPrompt(des, function(v)
-                return v.Parent.Parent.Name == "WoodenCounter" and IsA(v.Parent, "BasePart")
+                return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == "WoodenCounter" and IsA(v.Parent, "BasePart")
             end); if Prompt then
                 CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
                 return fireproximityprompt(Prompt, 1);
@@ -1597,7 +1662,7 @@ QueuePack = QueuePack or {}
         Functions.ToStove = function()
             if not B2C2Con.AutoCook then return; end;
             local Prompt = CommonF.findPrompt(GetDescendants(W), function(v)
-                return v.Parent.Parent.Name == "stove" and IsA(v.Parent, "BasePart");
+                return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == "stove" and IsA(v.Parent, "BasePart");
             end); if Prompt then
                 CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
                 return fireproximityprompt(Prompt, 1);
@@ -1615,7 +1680,7 @@ QueuePack = QueuePack or {}
         Functions.TurnInFood = function(des)
             if not B2C2Con.AutoCook then return; end;
             local Prompt = CommonF.findPrompt(des, function(v)
-                return v.Parent.Parent.Name == "TurnInFood";
+                return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == "TurnInFood";
             end); if Prompt then
                 Prompt.Parent.Parent.CanCollide = false; Prompt.Enabled = true;
                 CommonF.Tp(HumRSelf, Prompt.Parent.Parent.CFrame * CFr(0, -3, 0), 0.3);
@@ -1625,7 +1690,7 @@ QueuePack = QueuePack or {}
         Functions.GrabFood = function(value)
             if not B2C2Con.AutoCook then return; end;
             local Prompt = CommonF.findPrompt(GetDescendants(W), function(v)
-                return v.Parent.Parent.Name == value and IsA(v.Parent.Parent, "Model");
+                return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == value and IsA(v.Parent.Parent, "Model");
             end); if Prompt then
                 CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.33);
                 return fireproximityprompt(Prompt, 1);
@@ -1634,7 +1699,7 @@ QueuePack = QueuePack or {}
         Functions.GetBallGiver = function(self)
             return self.BallGiverPart or (function()
                 local Prompt = CommonF.findPrompt(GetDescendants(W), function(v)
-                    return v.Parent.Parent.Name == "BallGiver" and IsA(v.Parent, "BasePart");
+                    return v.Parent and v.Parent.Parent and v.Parent.Parent.Name == "BallGiver" and IsA(v.Parent, "BasePart");
                 end); if Prompt then
                     return Prompt;
                 end;
@@ -1923,6 +1988,18 @@ QueuePack = QueuePack or {}
                         end;
                     end;
                 end;
+            elseif where == "Kid/Mother" then
+                local mother = nil;
+                
+                for _, part in pairs(GetDescendants(W)) do
+                    if part.Name == "HumanoidRootPart" and part.Parent.Name == "Mother" then
+                        mother = part;
+                    end;
+                end;
+
+                if mother then
+                    ESPF.ESP(where, mother, RED, VEC10, false, true, false, false);
+                end;
             end;
         end;
         Functions.B2C3Func = function(self, where)
@@ -1935,14 +2012,14 @@ QueuePack = QueuePack or {}
                     if v then
                         if FindFirstChild(v, "ProximityPrompt") and v.Heart.Transparency == 0 then
                             CommonF.Tp(HumRSelf, GetPivot(v), 0.3);
-                            fireproximityprompt(v.ProximityPrompt, 1)
+                            fireproximityprompt(v.ProximityPrompt, 1, true)
                         end;
                     end;
                 end; for i, v in pairs(GetDescendants(W.Section1.Puzzle.SpinModel)) do
                     if IsA(v, "ProximityPrompt") and v.Parent.Name == "Heart" and v.Parent.Parent.Name == "BeatingHeart" then
                         CommonF.HumanoidEquip(HumSelf, FindFirstChild(Backpack, "Heart"));
                         CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3);
-                        fireproximityprompt(v, 1);
+                        fireproximityprompt(v, 1, true);
                     end;
                 end; return;
             elseif where == "Heart/Run" then
@@ -1950,7 +2027,7 @@ QueuePack = QueuePack or {}
                 for i, v in pairs(GetChildren(W.Section1.Maze.Doors2)) do
                     if FindFirstChild(v, "MAIN") then
                         if dist(v.MAIN.Position) <= 30 then
-                            fireproximityprompt(v.MAIN.ProximityPrompt, 1);
+                            fireproximityprompt(v.MAIN.ProximityPrompt, 1, true);
                             break;
                         end;
                     end;
@@ -1964,21 +2041,21 @@ QueuePack = QueuePack or {}
                 ForceFloat = true; for i, v in pairs(GetDescendants(W.Section1.Maze.Holes)) do
                     if IsA(v, "ProximityPrompt") and v.Parent.Name == "Hole" then
                         CommonF.Tp(HumRSelf, v.Parent.CFrame * CFr(0, -5, 0), 0.3);
-                        fireproximityprompt(v, 1);
+                        fireproximityprompt(v, 1, true);
                     end;
                 end; CommonF.Tp(HumRSelf, CFr(-78, 4, -442), 1);
                 local Prompt = CommonF.findPrompt(GetDescendants(W.Section1.Maze.Crafting.Tables), function(v)
                     return v.Parent.Name == "RootPart" and v.Parent.Parent.Name == "Monster" and dist(v.Parent.Position) <= 30;
                 end); if Prompt then
                     CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
-                    fireproximityprompt(Prompt, 1);
+                    fireproximityprompt(Prompt, 1, true);
                 end; ForceFloat = "None";
                 R.Packages.Packet.PacketFunction:InvokeServer(unpack(ArgsCraft));
                 twait(0.3); PSG.Crafting.Frame.Visible = false;
             elseif where == "Maze/Fire" then
                 for i, v in pairs(GetDescendants(W.Section1.Maze.Crafting.ArmFlames)) do
                     if IsA(v, "ProximityPrompt") and v.Parent.Name == "UndyingFlame" and not CommonF.distOf(v.Parent, W.Section1.Maze.GrinDemonNM.Hitbox, 20) then
-                        return CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3), fireproximityprompt(v, 1);
+                        return CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3), fireproximityprompt(v, 1, true);
                     end;
                 end; return;
             elseif where == "Maze/Escape" then
@@ -2068,7 +2145,7 @@ QueuePack = QueuePack or {}
                                 if not GetAttribute(v.HandMinions, "CanDamage") then
                                     CommonF.Tp(HumRSelf, v["2"].Model.Part.CFrame, 0.5);
                                     if v["2"].Base.ProximityPrompt.Enabled then
-                                        fireproximityprompt(v["2"].Base.ProximityPrompt, 1);
+                                        fireproximityprompt(v["2"].Base.ProximityPrompt, 1, true);
                                         twait(5.3);
                                     end;
                                 end; if GetAttribute(v.HandMinions, "CanDamage") then
@@ -2095,7 +2172,7 @@ QueuePack = QueuePack or {}
                                 tble.insert(Shapesss, tostring(obj.Name));
                             end;
                         end; twait(); if #Shapesss == 4 then
-                            CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3); fireproximityprompt(v.Parent.Parent.Parent.DoorDetector.ProximityPrompt, 1);
+                            CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3); fireproximityprompt(v.Parent.Parent.Parent.DoorDetector.ProximityPrompt, 1, true);
                             return R.Packages.Packet.PacketFunction:InvokeServer(0, {
                                 ["__args"] = {
                                     [1] = {
@@ -2135,7 +2212,7 @@ QueuePack = QueuePack or {}
                             while true do
                                 if not v then break; end;
                                 if v.Enabled then
-                                    fireproximityprompt(v, 1);
+                                    fireproximityprompt(v, 1, true);
                                 end; twait(0.1);
                             end; twait();
                         end;
@@ -2151,17 +2228,17 @@ QueuePack = QueuePack or {}
                 for _,v in pairs(GetChildren(W.Section4.Map.BabyFaceNPC.ProxPart)) do
                     if IsA(v, "ProximityPrompt") and v.Enabled then
                         CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3);
-                        fireproximityprompt(v, 1); break;
+                        fireproximityprompt(v, 1, true); break;
                     end;
                 end; twait(); for _,v in pairs(GetChildren(W.Section4.HotPotato.Givers)) do
                     if v.Name == "LarvaeGiver" and FindFirstChild(v, "RootPart") then
                         CommonF.Tp(HumRSelf, v.RootPart.CFrame, 0.3);
-                        fireproximityprompt(v.RootPart.ProximityPrompt, 1); break;
+                        fireproximityprompt(v.RootPart.ProximityPrompt, 1, true); break;
                     end;
                 end; twait(); for _,v in pairs(GetChildren(W.Section4.DogWall.RootPart)) do
                     if IsA(v, "ProximityPrompt") then
                         CommonF.Tp(HumRSelf, v.Parent.CFrame, 0.3);
-                        return fireproximityprompt(v, 1);
+                        return fireproximityprompt(v, 1, true);
                     end;
                 end; return;
             elseif where == "Mud" then
@@ -2226,7 +2303,7 @@ QueuePack = QueuePack or {}
                 for _,v in pairs(GetChildren(W.Section5.Boss.Katanas)) do
                     if v.Transparency == 0 and KatanaData < 4 then
                         CommonF.Tp(HumRSelf, v.CFrame * CFr(15,0,0), 0.3);
-                        fireproximityprompt(v.ProximityPrompt, 1);
+                        fireproximityprompt(v.ProximityPrompt, 1, true);
                         KatanaData = KatanaData + 1;
                     end;
                 end; ForceFloat = "None"; return CommonF.Tp(HumRSelf, CFr(3078, 18, -540));
@@ -3027,65 +3104,20 @@ QueuePack = QueuePack or {}
             elseif where == "Floor/Talk" then
                 return CommonF.Tp(HumRSelf, CFr(4449, 44, 1660));
             elseif where == "Floor/Auto" then
-                local PlayerObjective = W.Section1.PlayerObjective;
-                local CodeNumbers = PlayerObjective.CodeNumbers;
-                local Remote = PlayerObjective.CodeDoor.Remote;
                 local codextxt = {
-                    [1] = CodeNumbers["6thFloor"].SurfaceGui.Random,
-                    [2] = CodeNumbers["5thFloor"].SurfaceGui.Random,
-                    [3] = CodeNumbers["4thFloor"].SurfaceGui.Random,
-                    [4] = CodeNumbers["3rdFloor"].SurfaceGui.Random,
-                    [5] = CodeNumbers["2ndFloor"].SurfaceGui.Random,
-                    [6] = CodeNumbers["1stFloor"].SurfaceGui.Random,
-                };
-                local c, codeStr = {}, {};
-                for i=1, 6 do
-                    local txt = "";
-                    for _=1, 50 do
-                        txt = tostring(codextxt[i].Text or ""):gsub("%D", "");
-                        if txt ~= "" then break; end;
-                        twait(0.1);
-                    end;
-                    if txt == "" then
-                        return WindUI:Notify({
-                            Title = "<font color='rgb(255,0,0)'>B2C4 Code</font>",
-                            Content = "Cannot read code at floor #" .. tostring(i) .. ". Use Auto Talk / open keypad, then press Auto Codes again.",
-                            Icon = "circle-alert",
-                            Duration = 8,
-                        });
-                    end;
-                    tble.insert(c, tonumber(txt));
-                    tble.insert(codeStr, txt);
-                end;
-                local code = tble.concat(codeStr, "");
-                print("[B2C4 Auto Code] " .. code);
-                pcall(function()
-                    if setclipboard then
-                        setclipboard(code);
-                    elseif toclipboard then
-                        toclipboard(code);
-                    end;
-                end);
-                WindUI:Notify({
-                    Title = "<font color='rgb(255,255,0)'>B2C4 Code</font>",
-                    Content = "Code: " .. code .. " | Copied if supported.",
-                    Icon = "key-round",
-                    Duration = 12,
-                });
-                for _=1, 3 do
-                    pcall(function()
-                        Remote:FireServer(1, {});
-                    end);
-                    twait(0.15);
-                    pcall(function()
-                        Remote:FireServer(1, c);
-                    end);
-                    twait(0.25);
-                end;
-                return;
+                    [6] = W.Section1.PlayerObjective.CodeNumbers["1stFloor"].SurfaceGui.Random,
+                    [5] = W.Section1.PlayerObjective.CodeNumbers["2ndFloor"].SurfaceGui.Random,
+                    [4] = W.Section1.PlayerObjective.CodeNumbers["3rdFloor"].SurfaceGui.Random,
+                    [3] = W.Section1.PlayerObjective.CodeNumbers["4thFloor"].SurfaceGui.Random,
+                    [2] = W.Section1.PlayerObjective.CodeNumbers["5thFloor"].SurfaceGui.Random,
+                    [1] = W.Section1.PlayerObjective.CodeNumbers["6thFloor"].SurfaceGui.Random,
+                }; W.Section1.PlayerObjective.CodeDoor.Remote:FireServer(1, {});
+                local c = {}; for i=1, 6 do
+                    tble.insert(c, tonumber(codextxt[i].Text));
+                end; return W.Section1.PlayerObjective.CodeDoor.Remote:FireServer(1, c);
             elseif where == "Floor/Top" then
                 for _,v in pairs(GetChildren(W.Section1.Map.Barriers)) do
-                    if IsA(v, "BasePart") then
+                    if IsA(v, "Basepart") then
                         v:Destroy();
                     end;
                 end; return CommonF.Tp(HumRSelf, W.WHITE_FLAME_LANTERN.PieceA.CFrame, 0.3), fireproximityprompt(W.WHITE_FLAME_LANTERN.PieceA.ProximityPrompt, 1),
@@ -3151,22 +3183,18 @@ QueuePack = QueuePack or {}
                     [32] = CFr(-3449.1181640625, -197.33131408691406, -999.8219604492188);
                     [33] = CFr(-3449.1181640625, -197.31771850585938, -999.8219604492188);
                     [34] = CFr(-3241.165771484375, -200.42782592773438, -902.1727294921875);
-                }; local HumRSelfS = HumRSelf;
-                local function TweenChase1HalfSpeed(targetCF)
-                    local d = (CommonF._pos(HumRSelfS) - targetCF.Position).Magnitude;
-                    return CommonF.Tween({
+                }; local HumRSelfS = HumRSelf; for i = 2, 34 do
+                    CommonF.Tween({
                         primary = HumRSelfS,
-                        goal = {CFrame = targetCF},
-                        info = TweenInfo.new(math.clamp(d / 60, 0.7, 16), Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                        goal = {CFrame = Childs[i]}
                     });
-                end;
-                for i = 2, 34 do
-                    TweenChase1HalfSpeed(Childs[i]);
-                end; return TweenChase1HalfSpeed(W["Section2.5"].ChaseSequence.EndPoint.CFrame);
+                end; return CommonF.Tween({
+                    primary = HumRSelfS,
+                    goal = {CFrame = W["Section2.5"].ChaseSequence.EndPoint.CFrame}
+                });
             elseif where == "Mall/Chase2" then
                 return CommonF.Tp(HumRSelf, W["Section2.5"].ChaseSequence.SecondChaseStuff.ElevatorHit.CFrame);
             elseif where == "Car/Collect" then
-                -- Restored to script_goc logic: direct children first, then V8 Engine special mesh.
                 for _,v in pairs(GetChildren(W["Section2.5"].ChihiroMinigame.CarFixObjective.CarParts)) do
                     if IsA(v, "BasePart") then
                         CommonF.Tp(HumRSelf, v.CFrame, 0.3);
@@ -3196,96 +3224,22 @@ QueuePack = QueuePack or {}
                         end;
                     end;
                 end;
-            elseif where == "Draw/Ink" then
-                local ing = W.Section3.PaintPuzzle.Ingredients;
-                local collected, placed = 0, 0;
-
-                local function grabDirect(obj, preferPart)
-                    if not obj then return false end
-                    local targetPart = preferPart or (FindFirstChild(obj, "Part") or __B2C4GetPart(obj))
-                    local prompt = __B2C4GetPrompt(targetPart) or __B2C4GetPrompt(obj)
-                    if prompt and targetPart then
-                        CommonF.Tp(HumRSelf, targetPart.CFrame, 0.3)
-                        twait(0.05)
-                        fireproximityprompt(prompt, 1)
-                        collected += 1
-                        return true
-                    end
-                    return false
-                end
-
-                local orchidList, waterList = {}, {}
-                for _, v in pairs(GetChildren(ing)) do
-                    if v.Name == "Orchid" then
-                        tble.insert(orchidList, v)
-                    elseif v.Name == "Water" then
-                        tble.insert(waterList, v)
-                    end
-                end
-
-                for _, v in ipairs(orchidList) do
-                    grabDirect(v, FindFirstChild(v, "Part") or __B2C4GetPart(v))
-                    twait(0.05)
-                end
-                for _, v in ipairs(waterList) do
-                    grabDirect(v, __B2C4GetPart(v))
-                    twait(0.05)
-                end
-
-                local place = FindFirstChild(ing, "PlaceInkHere")
-                if place then
-                    local pp = __B2C4GetPrompt(place)
-                    local part = __B2C4GetPart(place)
-                    if pp and part then
-                        CommonF.Tp(HumRSelf, part.CFrame, 0.3)
-                        twait(0.05)
-                        fireproximityprompt(pp, 1)
-                        placed += 1
-                    end
-                end
-                return __B2C4Notify("<font color='rgb(255,255,0)'>Blessing Ink</font>", "Collected: " .. tostring(collected) .. " | Placed: " .. tostring(placed), NEVOIRS_UI_ICON, 2);
             elseif where == "Draw/Draw" then
-                local nearestpad = nil;
-                for _,v in pairs(GetChildren(W.Section3.PaintPuzzle)) do
-                    if FindFirstChild(v, "Pad") and dist(v.Pad.Position) <= 14 then
+                local nearestpad = nil; for _,v in pairs(GetChildren(W.Section3.PaintPuzzle)) do
+                    if FindFirstChild(v, "Pad") and dist(v.Pad.Position) <= 10 then
                         nearestpad = v;
                         break;
                     end;
+                end; if nearestpad then
+                    local obj = FindFirstChildWhichIsA(nearestpad.Pad, "Decal");
+                    local Text = obj.Texture;
+                    local tonn = Text:gsub("rbxassetid://", "");
+                    for _,v in ipairs(Paints[tonumber(tonn)]) do
+                        nearestpad.Pad.Controls.Draw:FireServer(v[1], v[2], v[3]);
+                    end;
                 end;
-                if not nearestpad then
-                    return __B2C4Notify("<font color='rgb(255,0,0)'>Draw</font>", "Không thấy pad gần bạn. Hãy enter vào bàn rồi thử lại.", NEVOIRS_UI_ICON, 2);
-                end
-
-                local pad = nearestpad.Pad
-                local controls = FindFirstChild(pad, "Controls")
-                local remote = controls and FindFirstChild(controls, "Draw")
-                if not remote then
-                    return __B2C4Notify("<font color='rgb(255,0,0)'>Draw</font>", "Không tìm thấy Draw remote ở pad gần nhất.", NEVOIRS_UI_ICON, 2);
-                end
-
-                local obj = FindFirstChildWhichIsA(pad, "Decal") or FindFirstChildWhichIsA(pad, "Texture")
-                local texture = obj and (obj.Texture or obj.TextureID or obj.Image)
-                local assetId = texture and tonumber((tostring(texture):gsub("rbxassetid://", ""):gsub("%D", "")))
-                local drawData = assetId and __B2C4FindPaintData(assetId)
-
-                if type(drawData) == "table" and #drawData > 0 then
-                    local sent = 0
-                    for _,v in ipairs(drawData) do
-                        pcall(function()
-                            remote:FireServer(v[1], v[2], v[3]);
-                        end)
-                        sent += 1
-                        if sent % 35 == 0 then twait() end
-                    end
-                    return __B2C4Notify("<font color='rgb(255,255,0)'>Draw</font>", "Đã vẽ asset " .. tostring(assetId) .. " (" .. tostring(sent) .. " nét).", NEVOIRS_UI_ICON, 2);
-                end
-
-                local sent = __B2C4UniversalDraw(remote)
-                return __B2C4Notify("<font color='rgb(255,255,0)'>Draw</font>", "Không có point-data cho asset " .. tostring(assetId or "?") .. ", đã dùng fallback phủ nét.", NEVOIRS_UI_ICON, 2);
             elseif where == "Draw/Item" then
-                local folder = W.WHITE_FLAME_LANTERN and W.WHITE_FLAME_LANTERN.PieceDnE;
-                if not folder then return end;
-                for _,v in pairs(GetChildren(folder)) do
+                for _,v in pairs(GetChildren(W.WHITE_FLAME_LANTERN.PieceDnE)) do
                     if v.Name == "PieceD" or v.Name == "PieceE" then
                         CommonF.Tp(HumRSelf, v.CFrame, 0.3);
                         fireproximityprompt(v.ProximityPrompt, 1);
@@ -3331,42 +3285,18 @@ QueuePack = QueuePack or {}
                 elseif where == "Draw/Senzai" then
                     return ESPF.ESP(where, W.Section3.Monster.Senzai.Hitbox, RED, VEC343, false, false);
                 elseif where == "Draw/Ingredients" then
-                    local ing = W.Section3.PaintPuzzle.Ingredients;
-                    local added = {};
-                    local function addIng(obj, color)
-                        if not obj or added[obj] then return end
-                        local anchor = (obj.Name == "Orchid" and FindFirstChild(obj, "Part")) or __B2C4GetPart(obj)
-                        if anchor then
-                            added[obj] = true;
-                            ESPF.ESP(where, anchor, color, VEC1, false, false);
-                        end
-                    end
-                    for _,v in pairs(GetChildren(ing)) do
-                        if v.Name == "Orchid" then
-                            addIng(v, Col3.fromRGB(77, 23, 129));
-                        elseif v.Name == "Water" then
-                            addIng(v, BLUE);
-                        elseif v.Name == "PlaceInkHere" then
-                            addIng(v, YELLOW);
+                    for _,v in pairs(GetChildren(W.Section3.PaintPuzzle.Ingredients)) do
+                        if v.Name == "Orchid" and v.ProximityPrompt.Enabled then
+                            ESPF.ESP(where, v.Part, Col3.fromRGB(77, 23, 129), VEC1, false, false);
+                        elseif v.Name == "Water" and v.ProximityPrompt.Enabled then
+                            ESPF.ESP(where, v, BLUE, VEC1, false, false);
                         end;
-                    end;
-                    for _,v in pairs(GetDescendants(ing)) do
-                        local n = v.Name;
-                        if n == "Orchid" then
-                            addIng(v, Col3.fromRGB(77, 23, 129));
-                        elseif n == "Water" then
-                            addIng(v, BLUE);
-                        elseif n == "PlaceInkHere" then
-                            addIng(v, YELLOW);
-                        end;
-                    end; return;
+                    end; return ESPF.ESP(where, W.Section3.PaintPuzzle.Ingredients.PlaceInkHere, YELLOW, VEC1, false, false);
                 elseif where == "Draw/Drawings" then
-                    for _,v in pairs(GetChildren(W.Section3.PaintPuzzle)) do
-                        local pad = FindFirstChild(v, "Pad");
-                        if pad and IsA(pad, "BasePart") then
-                            ESPF.ESP(where, pad, GREEN, VEC1, false, false);
-                        end;
-                    end; return;
+                    return ESPF.ESP(where, W.Section3.PaintPuzzle.PaintStation_A.Pad, GREEN, VEC1),
+                    ESPF.ESP(where, W.Section3.PaintPuzzle.PaintStation_B.Pad, GREEN, VEC1),
+                    ESPF.ESP(where, W.Section3.PaintPuzzle.PaintStation_C.Pad, GREEN, VEC1),
+                    ESPF.ESP(where, W.Section3.PaintPuzzle.PaintStation_D.Pad, GREEN, VEC1);
                 elseif where == "Survivors" then
                     for _,v in pairs(GetChildren(W.Section4.Rescue.NPCs)) do
                         if v.Name == "Pose" then
@@ -3376,7 +3306,262 @@ QueuePack = QueuePack or {}
                 end;
             end;
         end;
+        Functions.B3C1GetGatas = function()
+            local Grunts, Gatas = GetChildren(W.Section1.Grunts), {};
+            for i=1, #Grunts do
+                local v = Grunts[i];
+                if IsA(v, "Model") and FindFirstChildOfClass(v, "Humanoid") then
+                    tble.insert(Gatas, v);
+                end;
+            end; return Gatas;
+        end;
+        Functions.B3C1FireGata = function(Gata, sRE)
+            while Gata and Gata.Parent and sRE and sRE.Parent do
+                local Pivot = GetPivot(Gata);
+                CommonF.Tp(HumRSelf, Pivot*CFr(0, 40, 0), 0.1);
+                CAMERAREPLICA = Pivot;
+                R.GunAction:FireServer("fire");
+                sRE:FireServer();
+            end; CAMERAREPLICA = nil;
+        end;
+        Functions.B3C1Func = function(self, where)
+            if where == "Gata/Kill" then
+                local Gatas = self.B3C1GetGatas(); for i=1, #Gatas do
+                    local v = Gatas[i]; if v then
+                        local sRE = FindFirstChildWhichIsA(v, "RemoteEvent"); if sRE then
+                            self.B3C1FireGata(v, sRE);
+                        end;
+                    end;
+                end;
+            elseif where == "Gata/Body" then
+                local Bodies = GetChildren(W.Section1.DeadCivilians); for i=1, #Bodies do
+                    local v = Bodies[i]; if v and v.Parent then
+                        local Prompt = FindFirstChild(v, "HumanoidRootPart");
+                        Prompt = Prompt and FindFirstChild(Prompt, "ProximityPrompt");
+                        if Prompt then
+                            CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
+                            fireproximityprompt(Prompt, 1);
+                        end;
+                    end;
+                end;
+            elseif where == "Gata/Mika" then
+                return CommonF.Tp(HumRSelf, W.Section1.Monster.Trigger.CFrame);
+            elseif where == "Gata/Hideo" then
+                return CommonF.Tp(HumRSelf, GetPivot(W.Section1.HideoScene.Hideo2));
+            elseif where == "School/Med" then
+                local Prompt = W.Section2.Items.Bandage.Handle.ProximityPrompt;
+                CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
+                return fireproximityprompt(Prompt, 1);
+            elseif where == "School/Hideo" then
+                return CommonF.Tp(HumRSelf, CFr(175, 8, 338));
+            elseif where == "School/Heal" then
+                local sRE = R.modules.Packet.Reliable;
+                sRE:FireServer("Section2/HideoMinigameStarted");
+                sRE:FireServer("Section2/HideoHealed");
+                return sRE:FireServer("Section2/HideoMinigameEnded");
+            elseif where == "School/Locker" then
+                return CommonF.Tp(HumRSelf, CFr(143, 20, 504));
+            elseif where == "School/Spider" then
+                for i,v in pairs(GetChildren(W.Section2.MAINOBJECTIVE2.Spiders)) do
+                    if v.Name ~= "AkariSpider" then continue; end;
+                    local Hitbox = v.Hitbox;
+                    CommonF.Tp(HumRSelf, Hitbox.CFrame, 0.3);
+                    for i=1, 20 do
+                        if not Hitbox or not Hitbox.Parent then
+                            break;
+                        end;
+                        CAMERAREPLICA = Hitbox.CFrame;
+                        R.GunAction:FireServer("fire");
+                        Hitbox.RemoteEvent:FireServer();
+                        twait(0.1);
+                    end;
+                end; CAMERAREPLICA = nil; return;
+            elseif where == "Forest/Egao" then
+                if PlaceId == 6243699076 then
+                    QueuePack.SetInfo("Egao", true);
+                    QueuePack.Init();
+                    R.MimicSaveSync:FireServer(0,1);
+                else
+                    if QUEUE_INFO.Egao then
+                        CommonF.Tween({primary = HumRSelf; goal = { CFrame = CFr(-3658, 8, 372) }; info=TweenInfo.new(3)});
+                        local ISEGAO = false; PSG.EgaoPulseText.Frame:GetPropertyChangedSignal("Visible"):Connect(function()
+                            ISEGAO = true;
+                        end); tk.delay(5 + game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000, function()
+                            if not ISEGAO then
+                                QueuePack.SetInfo("Egao", true);
+                                QueuePack.Init();
+                                GG.TeleportService:Teleport(6243699076, selff);
+                            else
+                                WindUI:Notify({
+                                    Title = "<font color='rgb(255,0,0)'>EGAO</font>",
+                                    Content = "IS HERE!",
+                                    Icon = "circle-alert",
+                                    Duration = 5,
+                                });
+                            end;
+                        end);
+                    end;
+                end;
+            elseif where == "Forest/Cave" then
+                return CommonF.Tp(HumRSelf, W.Section3.OBJECTIVE.Trigger2.CFrame);
+            elseif where == "Forest/Generator" then
+                for i,v in pairs(GetChildren(W.Section3.OBJECTIVE.Circuits)) do
+                    if v.Name == "CircuitPillar" then
+                        v.CollisionPart.CanCollide = false;
+                        CommonF.Tp(HumRSelf, v.CollisionPart.CFrame, 0.3);
+                        fireproximityprompt(v.PromptPart.ProximityPrompt);
+                        twait(1); for i=1, 3 do
+                            R.modules.Packet.Reliable:FireServer(
+                                "Section3/CircuitRoundComplete",
+                                v
+                            );
+                        end;
+                    end;
+                end; return;
+            elseif where == "IJO/Keycard" then
+                local Prompt = W.Section4.Lab.Floor1.Entrance.IDCARD.ProximityPrompt;
+                CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
+                return fireproximityprompt(Prompt, 1);
+            elseif where == "IJO/PASS" then
+                local Director = FindFirstChild(W.Section4.Lab.Floor1.Objective.DirectorSpawn, "Director");
+                if not Director then return WindUI:Notify({
+                    Title = "<font color='rgb(255,0,0)'>ALERT</font>",
+                    Content = "Turn on the computer first.",
+                    Icon = "circle-alert",
+                    Duration = 5,
+                }); end;
+                local Card = FindFirstChild(Director, "IDCARD2");
+                if Card then
+                    CommonF.Tp(HumRSelf, Card.CFrame, 0.3);
+                    fireproximityprompt(Card.ProximityPrompt, 1);
 
+                    local Prompt = W.Section4.Lab.LockedDoors.MetalDoor.IDSCAN.Prompt.ProximityPrompt;
+                    CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
+                    fireproximityprompt(Prompt, 1);
+                end; local PASS = W.Section4.Lab.Floor1.Objective.StickyNote.PASSWORD.SurfaceGui.RandomNumber;
+                CommonF.Tp(HumRSelf, CFr(-3424, -300, 4315), 0.3);
+                R.modules.Packet.Unreliable:FireServer(
+                    "Section4/LaptopSubmit",
+                    PASS.Text
+                );
+            elseif where == "IJO/C4" then
+                for _,v in pairs(GetChildren(W.Section4.Lab.Floor1.Objective2.C4Explode)) do
+                    if v.Name ~= "C4Bomb" then continue; end;
+                    local Prompt = FindFirstChild(v, "ProximityPrompt");
+                    if Prompt and Prompt.Enabled then
+                        CommonF.Tp(HumRSelf, v.CFrame, 0.3);
+                        fireproximityprompt(Prompt, 1);
+                    end;
+                end; return;
+            elseif where == "IJO/C4_2" then
+                CommonF.Tween({primary = HumRSelf; goal = { CFrame = CFr(-4147, 107, 2154) }, info=TweenInfo.new(3)});
+                CommonF.Tween({primary = HumRSelf; goal = { CFrame = CFr(-4143, 107, 2501) }, info=TweenInfo.new(3)});
+                for _,v in pairs(GetChildren(W.Section4.Lab.Floor1.Objective3.C4Explode)) do
+                    if v.Name ~= "C4Bomb" then continue; end;
+                    local Prompt = FindFirstChild(v, "ProximityPrompt");
+                    if Prompt and Prompt.Enabled then
+                        CommonF.Tp(HumRSelf, v.CFrame, 0.3);
+                        fireproximityprompt(Prompt, 1);
+                    end;
+                end; return;
+            elseif where == "IJO/Terminal" then
+                for _,v in pairs(GetChildren(W.Section4.Lab.CleanseRoomObjective.ShapeTerminals)) do
+                    if v.Name ~= "Terminal" then continue; end;
+                    local Prompt = FindFirstChild(v, "PromptPart");
+                    Prompt = Prompt and FindFirstChild(Prompt, "ProximityPrompt");
+                    if Prompt and Prompt.Enabled then
+                        CommonF.Tp(HumRSelf, Prompt.Parent.CFrame, 0.3);
+                        fireproximityprompt(Prompt, 1); twait(0.3);
+                        R.modules.Packet.Reliable:FireServer(
+                            "ShapeTerminal/RoundComplete",
+                            v
+                        );
+                        R.modules.Packet.Reliable:FireServer(
+                            "ShapeTerminal/Release",
+                            v
+                        );
+                    end;
+                end; return;
+            elseif where == "IJO/Valve" then
+                for _,v in pairs(GetChildren(W.Section4.Lab.CleanseRoomObjective.Valves)) do
+                    if not IsA(v, "Model") then continue; end;
+                    local Icon = v.Notification.Icon;
+                    if not Icon.Enabled then continue; end;
+                    local Chs = GetChildren(v);
+                    while Icon.Enabled do
+                        CommonF.Tp(HumRSelf, Icon.Parent.CFrame, 0.3); for i=1, #Chs do
+                            local v2 = Chs[i]; if v2 and v2.Name == "Turners" then
+                                local Prompt = FindFirstChild(v2, "Right");
+                                if Prompt then
+                                    fireproximityprompt(Prompt, 1);
+                                end;
+                            end;
+                        end;
+                    end;
+                end;
+            elseif where == "IJO/Threat" then
+                return R.modules.Packet.Reliable:FireServer("Section4/LockdownSkillCheckHit");
+            elseif where == "Water/Main" then
+                local MainSwitch = W.Section5.MainObjective.PowerSwitch.RootPart.ProximityPrompt;
+                CommonF.Tp(HumRSelf, MainSwitch.Parent.CFrame, 0.3);
+                return fireproximityprompt(MainSwitch, 1);
+            elseif where == "Water/Wire" then
+                local sRE = R.modules.Packet.Reliable;
+                for _,box in pairs(GetChildren(W.Section5.MainObjective.Boxes)) do
+                    if box.Name ~= "WireBox" then continue; end;
+                    if box.PromptPart.ProximityPrompt.Enabled then
+                        CommonF.Tp(HumRSelf, box.PromptPart.CFrame, 0.3);
+                        sRE:FireServer("Section5/WireBoxClaim", box);
+                        sRE:FireServer("Section5/WireBoxClaim", box);
+
+                        for _,v in pairs(GetChildren(box.Bolt)) do
+                            if v.Name == "Screw" then
+                                sRE:FireServer("Section5/WireBoxScrewDone", v);
+                            end;
+                        end;
+
+                        for _,v in pairs(GetChildren(box.Cuttable)) do
+                            if v.Name == "Cut" then
+                                sRE:FireServer("Section5/WireBoxCutDone", v);
+                            end;
+                        end;
+
+                        sRE:FireServer("Section5/WireBoxComplete", box);
+
+                        box.PromptPart.ProximityPrompt.Enabled = false;
+                    end;
+                end;
+            end;
+        end;
+        Functions.B3C1ESP = function(self, where, state)
+            if not state then
+                return ESPF.Destroy(where);
+            elseif where == "Gatas" then
+                local Gatas = self.B3C1GetGatas(); for i=1, #Gatas do
+                    local v = Gatas[i]; if v then
+                        ESPF.ESP(where, v.Hitbox, RED, VEC10, nil, nil, false, false);
+                    end;
+                end; return;
+            elseif where == "Bodies" then
+                local Bodies = GetChildren(W.Section1.DeadCivilians); for i=1, #Bodies do
+                    local v = Bodies[i]; if v and v.Parent then
+                        local Prompt = FindFirstChild(v, "HumanoidRootPart");
+                        Prompt = Prompt and FindFirstChild(Prompt, "ProximityPrompt");
+                        if Prompt then
+                            ESPF.ESP(where, Prompt.Parent, GREEN, VEC2, nil, nil, false, false);
+                        end;
+                    end;
+                end;
+            elseif where == "Akari" then
+                ESPF.ESP(where, W.Section2.Monster.Akari.Hitbox, RED, VEC10, nil, nil, false, false);
+            elseif where == "Mizuno" then
+                ESPF.ESP(where, W.Section3.Monster.Mizuno.Hitbox, RED, VEC10, nil, nil, false, false);
+            elseif where == "HogoGuntai" then
+                ESPF.ESP(where, W.Section4.Monster.HogoGuntai.Hitbox, RED, VEC10, nil, nil, false, false);
+            elseif where == "Baigai" then
+                ESPF.ESP(where, W.Section5.Monster.Baigai.Hitbox, RED, VEC10, nil, nil, false, false);
+            end;
+        end;
         Functions.JigokuFunc = function(where)
             if where == "Talk" then
                 return CommonF.Tp(HumRSelf, CFr(607.54, 11.91, 1080));
@@ -3386,6 +3571,50 @@ QueuePack = QueuePack or {}
                     if not Prompt or not Prompt.Enabled then continue; end;
                     CommonF.Tp(HumRSelf, v.CFrame, 0.3);
                     fireproximityprompt(Prompt, 1);
+                end;
+            end;
+        end;
+        Functions.CTFunc = function(self, where)
+            if where == "Repair" then
+                local Q1 = CTQuests["1"]; self:CTFunc("Talk");
+                if FindFirstChild(Q1.Items, "Controls") then
+                    CommonF.Tp(HumRSelf, Q1.Items.Controls.CFrame, 0.3);
+                    fireproximityprompt(Q1.Items.Controls.ProximityPrompt, 1, true);
+                end; if FindFirstChild(Q1.Items, "Ropes") then
+                    CommonF.Tp(HumRSelf, Q1.Items.Ropes.CFrame, 0.3);
+                    fireproximityprompt(Q1.Items.Ropes.ProximityPrompt, 1, true);
+                end; if FindFirstChild(Q1.Items, "Extinguisher") then
+                    CommonF.Tp(HumRSelf, Q1.Items.Extinguisher.CFrame, 0.3)
+                    fireproximityprompt(Q1.Items.Extinguisher.ProximityPrompt, 1, true);
+                end; if FindFirstChild(Q1.Items, "RepairPoint") then
+                    CommonF.Tp(HumRSelf, Q1.Items.RepairPoint.CFrame, 0.3);
+                    fireproximityprompt(Q1.Items.RepairPoint.ProximityPrompt, 1, true);
+                end; return CommonF.Tp(HumRSelf, SAFESPOT);
+            elseif where == "Collect" then
+                self:CTFunc("Talk"); for _, v in pairs(GetChildren(CTQuests["2"].CollectToys)) do
+                    if v and FindFirstChild(v, "ProximityPrompt") then
+                        CommonF.Tp(HumRSelf, v.CFrame, 0.3);
+                        fireproximityprompt(v.ProximityPrompt, 1, true);
+                    end;
+                end; return CommonF.Tp(HumRSelf, SAFESPOT);
+            elseif where == "Talk" then
+                CommonF.Tp(HumRSelf, W.NPCs.Elf.Elf.RootPart.CFrame, 0.3);
+                return fireproximityprompt(W.NPCs.Elf.Elf.RootPart.ProximityPrompt, 1, true);
+            elseif where == "Key" then
+                local krampusH = GameAI.Krampus.HumanoidRootPart;
+                CommonF.Tp(HumRSelf, krampusH.CFrame + (krampusH.CFrame.LookVector * -9), 0.3);
+                fireproximityprompt(krampusH.ProximityPrompt, 1, true);
+                return CommonF.Tp(HumRSelf, SAFESPOT);
+            end;
+        end;
+        Functions.CTESP = function(state, where)
+            if not state then
+                return ESPF.Destroy(where);
+            elseif where == "Krampus" then
+                ESPF.ESP(where, GameAI.Krampus, RED, VEC10, nil, nil, false, false);
+            elseif where == "Toys" then
+                for _,v in pairs(GetChildren(W.Quests["2"].CollectToys)) do
+                    ESPF.ESP(where, v, GREEN, VEC2, nil, nil, false, false);
                 end;
             end;
         end;
@@ -4128,6 +4357,19 @@ QueuePack = QueuePack or {}
             end;
         end)
 
+        CoruTask.New("Yen", function()
+            local MimicCurrencySpawns = WaitForChild(W, "MimicCurrencySpawns", 10);
+            if not MimicCurrencySpawns then return; end;
+
+            while true do
+                if not YenCon.Aura and not YenCon.ESP then
+                    ESPF.Destroy("Yen");
+                    CoruTask.Close("Yen");
+                end; Functions.YenFunc(MimicCurrencySpawns);
+                twait(0.1);
+            end;
+        end);
+
         ScriptData.AutoData = {
             ClientTab = {
                 {type="Group", dats={
@@ -4144,6 +4386,10 @@ QueuePack = QueuePack or {}
                         {type="Toggle", EN="VFly", EN2="Fly by camera direction like Nevoirs.lua.", TH1="บิน", TH2="VFly ตามกล้อง", Path="Client/Enable Fly"},
                     }, Title="Client", Open=true};
                 }};
+            };
+            YenTab = {
+                {type="Toggle", EN="Yen Aura", EN2="Auto collect nearby Yen.", TH1="ออโต้เก็บเงิน", TH2="ออโต้เก็บเงินในระยะ", Path="Aura"},
+                {type="Toggle", EN="ESP Yen", EN2="Show Yen boxes.", TH1="ESP เงิน", TH2="มองเห็นเงิน", Path="ESP"},
             };
             EmoteTab = {
                 {type="Group", dats={
@@ -4783,6 +5029,115 @@ QueuePack = QueuePack or {}
                 }}; {type="Space"};
             };
 
+            B3C1Tab = {
+                {type="Group", dats={
+                    {dat={
+                        {type="Button", EN="Kill All Gatas", EN2="Teleport & fire a shot with client validation.", TH1="ยิง Gatas", TH2="วาปไปยิง Gatas พร้อมการยืนยันจาก Client", Callback=function()
+                            return Functions:B3C1Func("Gata/Kill");
+                        end};
+                        {type="Button", EN="Interact All Dead Bodies", EN2="Teleport to dead bodies and interact.", TH1="รายงานศพ", TH2="วาปไปรายงานศพ", Callback=function()
+                            return Functions:B3C1Func("Gata/Body");
+                        end};
+                        {type="Button", EN="Teleport To Mika", EN2="Watch she's gone.", TH1="วาปไปหา Mika", TH2="ไปดูฉากสิ้นหวัง", Callback=function()
+                            return Functions:B3C1Func("Gata/Mika");
+                        end};
+                        {type="Button", EN="Teleport To Hideo/Door", EN2="Tell Hideo a sad story.", TH1="วาปไปหา Hideo", TH2="ไปเล่าเรื่องราวสิ้นหวัง", Callback=function()
+                            return Functions:B3C1Func("Gata/Hideo");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Toggle", EN="ESP Gatas", EN2="Show Gatas' hitbox", TH1="ESP Gatas", TH2="มองเห็น Gatas", Path="ESP/Gatas", Callback=function(state)
+                            Configs.B3C1.ESP.Gatas = state;
+                            return Functions:B3C1ESP("Gatas", state);
+                        end};
+                        {type="Toggle", EN="ESP Dead Bodies", EN2="Show dead bodies", TH1="ESP ศพ", TH2="มองเห็นศพ", Path="ESP/Bodies", Callback=function(state)
+                            Configs.B3C1.ESP.Bodies = state;
+                            return Functions:B3C1ESP("Bodies", state);
+                        end};
+                    }, Title="Section 1 | Gatas & Dead Bodies"};
+                }}; {type="Space"}; {type="Space"};
+                {type="Group", dats={
+                    {dat={
+                        {type="Button", EN="Grab Medical Kit", EN2="Teleport to Medical Kit and grab it.", TH1="หยิบกล่องปฐมพยาบาล", TH2="วาปไปหยิบกล่องปฐมพยาบาล", Callback=function()
+                            return Functions:B3C1Func("School/Med");
+                        end};
+                        {type="Button", EN="Teleport To Hideo", EN2="Teleport to Hideo.", TH1="วาปไปหา Hideo", TH2="วาปไปหา Hideo", Callback=function()
+                            return Functions:B3C1Func("School/Hideo");
+                        end};
+                        {type="Button", EN="Heal Hideo", EN2="Teleport to him before use this.", TH1="รักษา Hideo", TH2="วาปก่อน แล้วค่อยกด ไม่งั้นใช้ไม่ได้หรือโดนแบน", Callback=function()
+                            return Functions:B3C1Func("School/Heal");
+                        end};
+                        {type="Button", EN="Teleport To Locker", EN2="Teleport to locker.", TH1="วาปไปที่ล็อกเกอร์", TH2="วาปไปที่ล็อกเกอร์", Callback=function()
+                            return Functions:B3C1Func("School/Locker");
+                        end};
+                        {type="Button", EN="Auto Kill Spiders", EN2="Teleport & shoot at the spiders.", TH1="ออโต้ฆ่าแมงมุม", TH2="วาปไปยิงแมงมุม", Callback=function()
+                            return Functions:B3C1Func("School/Spider");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Toggle", EN="ESP Akari", EN2="Show Akari's hitbox.", TH1="ESP Akari", TH2="มองเห็น Akari", Path="ESP/Akari", Callback=function(state)
+                            Configs.B3C1.ESP.Akari = state;
+                            return Functions:B3C1ESP("Akari", state);
+                        end};
+                    }, Title="Section 2 | School"};
+                }}; {type="Space"}; {type="Space"};
+                {type="Group", dats={
+                    {dat={
+                        {type="Button", EN="Auto Find Egao", EN2="Press this in Lobby, This will not auto complete the event so you have to look at her by yourself. <font color=\"rgb(255,0,0)\">Forest must be the first saved.</font>", TH1="ออโต้หา Egao", TH2="กดปุ่มนี้ใน Lobby แล้วต้องดูจอตลอดเวลาเพราะไม่มีออโต้มองหา Egao แล้วก็อย่าลืมทำให้ Forest เป็น Save แรก", Callback=function()
+                            return Functions:B3C1Func("Forest/Egao");
+                        end};
+                        {type="Button", EN="Teleport To IJO Entrance", EN2="Teleport to the cave entrance for cutscene.", TH1="วาปไปที่ทางเข้าถ้ำ", TH2="วาปไปที่ทางเข้าถ้ำเพื่อเริ่มฉากต่อสู้", Callback=function()
+                            return Functions:B3C1Func("Forest/Cave");
+                        end};
+                        {type="Button", EN="Auto Fix Generators", EN2="Teleport & fix generators.", TH1="ซ่อม Generator", TH2="วาปไปซ่อม Generator", Callback=function()
+                            return Functions:B3C1Func("Forest/Generator");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Toggle", EN="ESP Mizuno", EN2="Show Mizuno's hitbox.", TH1="ESP Mizuno", TH2="มองเห็น Mizuno", Path="ESP/Mizuno", Callback=function(state)
+                            Configs.B3C1.ESP.Mizuno = state;
+                            return Functions:B3C1ESP("Mizuno", state);
+                        end};
+                    }, Title="Section 3 | Forest"};
+                }}; {type="Space"}; {type="Space"};
+                {type="Group", dats={
+                    {dat={
+                        {type="Button", EN="Grab Keycard", EN2="Teleport & collect keycard.", TH1="เก็บคีย์การ์ด", TH2="วาปไปเก็บคีย์การ์ด", Callback=function()
+                            return Functions:B3C1Func("IJO/Keycard");
+                        end};
+                        {type="Button", EN="Enter Codes", EN2="Teleport & enter the code.", TH1="ใส่รหัส", TH2="วาปและใส่รหัส", Callback=function()
+                            return Functions:B3C1Func("IJO/PASS");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Button", EN="Place C4 (1)", EN2="Teleport & place C4.", TH1="วางระเบิด C4", TH2="วาปไปวางระเบิด C4", Callback=function()
+                            return Functions:B3C1Func("IJO/C4");
+                        end};
+                        {type="Button", EN="Place C4 (2)", EN2="Teleport & place C4 at Netamo.", TH1="วางระเบิด C4 ที่ผี", TH2="วาปไปวางระเบิด C4 ที่ผี", Callback=function()
+                            return Functions:B3C1Func("IJO/C4_2");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Button", EN="Activate Terminals", EN2="Teleport & activate terminals.", TH1="เปิด terminals", TH2="วาปไปเปิด terminals", Callback=function()
+                            return Functions:B3C1Func("IJO/Terminal");
+                        end};
+                        {type="Button", EN="Turn Valves", EN2="Teleport & turn valves.", TH1="เปิดวาล์ว", TH2="วาปไปเปิดวาล์ว", Callback=function()
+                            return Functions:B3C1Func("IJO/Valve");
+                        end};
+                        {type="Button", EN="Hit Skill Check", EN2="Enter the 'Lock Threat' minigame by yourself. Only press this button by the amout of circles on screen.", TH1="กดสกิล", TH2="กดเพื่อเริ่มมินิเกม 'Lock Threat' ด้วยตัวเองแล้วค่อยกดออโต้ตามจำนวนวงกลมบนหน้าจอ", Callback=function()
+                            return Functions:B3C1Func("IJO/Threat");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Toggle", EN="ESP HogoGuntai", EN2="Show HogoGuntai's hitbox.", TH1="ESP HogoGuntai", TH2="มองเห็น HogoGuntai", Path="ESP/HogoGuntai", Callback=function(state)
+                            Configs.B3C1.ESP.HogoGuntai = state;
+                            return Functions:B3C1ESP("HogoGuntai", state);
+                        end};
+                    }, Title="Section 4 | IJO"};
+                }}; {type="Space"}; {type="Space"};
+                {type="Group", dats={
+                    {dat={
+                        {type="Button", EN="Main Switch", EN2="Teleport & interact with the main switch.", TH1="เปิดสวิตช์หลัก", TH2="วาปไปเปิดสวิตช์หลัก", Callback=function()
+                            return Functions:B3C1Func("Water/Main");
+                        end};
+                        {type="Button", EN="Auto Wire", EN2="Teleport & interact with the all boxes.", TH1="เสียบสายไฟอัตโนมัติ", TH2="วาปไปเสียบสายไฟอัตโนมัติ", Callback=function()
+                            return Functions:B3C1Func("Water/Wire");
+                        end}; {type="Space"}; {type="Space"};
+                        {type="Toggle", EN="ESP Baigai", EN2="Show Baigai's hitbox.", TH1="ESP Baigai", TH2="มองเห็น Baigai", Path="ESP/Baigai", Callback=function(state)
+                            Configs.B3C1.ESP.Baigai = state;
+                            return Functions:B3C1ESP("Baigai", state);
+                        end};
+                    }, Title="Section 5 | Water"};
+                }};
+            };
             JigokuTab = {
                 {type="Button", Title="Teleport To Place", TH1="วาปไปที่แมพ Jigoku", Callback=IB_NO_VIRTUALIZE(function()
                     return TTeleport(GG.TeleportService, 7618863566, selff);
@@ -4858,9 +5213,24 @@ QueuePack = QueuePack or {}
             };
 
             ChristmasTrialTab = {
-                {type="Button", EN="Teleport To Christmas Trial", EN2="Teleport to Christmas Trial place.", TH1="วาปไป Christmas Trial", TH2="วาปไปแมพ Christmas Trial", Callback=IB_NO_VIRTUALIZE(function()
-                    return TTeleport(GG.TeleportService, 8311302084, selff);
-                end)};
+                {type="Toggle", EN="ESP Krampus", EN2="Show Krampus's hitbox", TH1="ESP Krampus", TH2="มองเห็น Krampus", Path="ESP/Krampus", Callback=function(state)
+                    return Functions.CTESP(state,"Krampus");
+                end};
+                {type="Toggle", EN="ESP Toys", EN2="Show all Toys", TH1="ESP ของเล่น", TH2="มองเห็นของเล่น", Path="ESP/Toys", Callback=function(state)
+                    return Functions.CTESP(state, "Toys");
+                end}; {type="Space"}; {type="Space"};
+                {type="Button", EN="Auto Repair", EN2="Teleport & repaire Santa's sleigh", TH1="ออโต้ซ่อม", TH2="วาปและซ่อมตุ๊กๆแซนต้า", Callback=function()
+                    return Functions:CTFunc("Repair");
+                end};
+                {type="Button", EN="Collect Toys", EN2="Teleport & collect all toys", TH1="เก็บของเล่น", TH2="วาปและเก็บของเล่นทั้งหมด", Callback=function()
+                    return Functions:CTFunc("Collect");
+                end}; {type="Space"}; {type="Space"};
+                {type="Button", EN="Talk", EN2="Teleport & talk with Elf", TH1="คุย", TH2="วาปไปคุยกับ Elf", Callback=function()
+                    return Functions:CTFunc("Talk");
+                end};
+                {type="Button", EN="Get Key", EN2="Teleport & grab the key", TH1="เก็บกุญแจ", TH2="วาปไปเก็บกุญแจ", Callback=function()
+                    return Functions:CTFunc("Key");
+                end}; {type="Space"}; {type="Space"};
             };
             HalloweenTrialTab = {
                 {type="Paragraph", Title="Halloween Trial", Desc="Tab đã được khôi phục theo nhóm game mode. Script gốc chỉ tạo tab này nhưng không có logic auto chi tiết.", Image="ghost"};
@@ -5097,6 +5467,7 @@ QueuePack = QueuePack or {}
             end)
 
             local ClientTab = LoaderSettings.AllowClientTab and Window:Tab({ Title = "Client", Icon = "user" })
+            local YenTab = Window:Tab({ Title = "Yen", Icon = "coins" })
             local EmoteTab  = Window:Tab({ Title = "Emotes", Icon = "accessibility" })
             local SettingTab = Window:Tab({ Title = "Setting", Icon = "settings" })
             pcall(function() Window:Divider() end)
@@ -5109,6 +5480,7 @@ QueuePack = QueuePack or {}
             local B2C2Tab = Window:Tab({ Title = "B2C2", Icon = "book-open" })
             local B2C3Tab = Window:Tab({ Title = "B2C3", Icon = "book-open" })
             local B2C4Tab = Window:Tab({ Title = "B2C4", Icon = "book-open" })
+            local B3C1Tab = Window:Tab({ Title = "B3C1", Icon = "book-open" })
             pcall(function() Window:Divider() end)
             local JigokuTab = Window:Tab({ Title = "Jigoku", Icon = "skull" })
             local WitchTrialTab = Window:Tab({ Title = "Witch Trial", Icon = "ghost" })
@@ -5155,6 +5527,7 @@ QueuePack = QueuePack or {}
             end
 
             if ClientTab then build(ClientTab, ScriptData.AutoData.ClientTab, "Client") end
+            build(YenTab, ScriptData.AutoData.YenTab, "Yen")
             build(EmoteTab, ScriptData.AutoData.EmoteTab, "Emote")
 
             local function buildSections(tab, data, scope)
@@ -5177,6 +5550,7 @@ QueuePack = QueuePack or {}
             build(B2C2Tab, ScriptData.AutoData.B2C2Tab, "B2C2")
             build(B2C3Tab, ScriptData.AutoData.B2C3Tab, "B2C3")
             build(B2C4Tab, ScriptData.AutoData.B2C4Tab, "B2C4")
+            build(B3C1Tab, ScriptData.AutoData.B3C1Tab, "B3C1")
             build(JigokuTab, ScriptData.AutoData.JigokuTab, "Jigoku")
             build(WitchTrialTab, ScriptData.AutoData.WitchTrialTab, "Witch")
             build(ChristmasTrialTab, ScriptData.AutoData.ChristmasTrialTab, "Christmas")
@@ -5231,6 +5605,8 @@ QueuePack = QueuePack or {}
                             CoruTask.Handle("EnzukaiJin");
                         end; if NMCSCon.Ringmaster.AutoKill then
                             CoruTask.Handle("Ringmaster");
+                        end; if YenCon.Aura or YenCon.ESP then
+                            CoruTask.Handle("Yen");
                         end;
                         twait(0.1);
                     end;
@@ -5289,6 +5665,38 @@ QueuePack = QueuePack or {}
 
                     CoruTask.Init(ScriptCache.WindUI);
                     CoruTask.Intialized = true;
+
+
+                    if PlaceId == 128715637193371 then
+                        if GG.LowerC and not ScriptCache.B3C1CameraHooked then
+                            ScriptCache.B3C1CameraHooked = true;
+                            local okHook, hookErr = pcall(function()
+                                local REQP = require(R.modules.Packet);
+                                local o; o = GG.LowerC(getmetatable(REQP.unreliablesend.ReplicationService.Character.updateState).__call, function(...)
+                                    local args = {...};
+                                    if args[1] and args[1].__name == "updateState" then
+                                        if not CAMERAREPLICA then
+                                            return o(...);
+                                        end; args[2] = CF.lookAt(
+                                            Cam.CFrame.Position,
+                                            CAMERAREPLICA.Position
+                                        ); return o(unpack(args));
+                                    end; return o(unpack(args));
+                                end);
+                            end);
+                            if not okHook then warn("[FiHon] B3C1 camera replica hook failed:", hookErr); end;
+                        end;
+
+                        if QUEUE_INFO.Egao then
+                            local Intro = WaitForChild(W, "IntroCutscene", 9e9);
+                            repeat twait(0.1); until not Intro or not Intro.Parent or not FindFirstChild(Intro, "SpawnBox");
+                            Functions:B3C1Func("Forest/Egao");
+                        end;
+                    elseif PlaceId == 6243699076 and QUEUE_INFO.Egao then
+                        Functions:B3C1Func("Forest/Egao");
+                    elseif PlaceId == 8311299084 or PlaceId == 8311302084 then
+                        CTQuests = WaitForChild(W, "Quests", 9e9);
+                    end;
 
 
                 end;
